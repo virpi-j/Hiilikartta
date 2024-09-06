@@ -137,8 +137,9 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   #    coeffPeat1 <- EC1[sampleID]
   #    coeffPeat2 <- EC2[sampleID]
   #  }
-    if(RCP>0) {rcps <- paste0(climMod[climModids[sampleID]],rcpx[RCP])}
-    else {rcps <- "CurrClim"}
+    if(RCP>0) {
+      rcps <- paste0(climMod[climModids[sampleID]],rcpx[RCP])
+    } else {rcps <- "CurrClim"}
     print(paste0("Climate model ",sampleID,": ",rcps))
   #} else {
   #  sampleX[,area := N*16^2/10000] 
@@ -202,7 +203,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   # dat = dat[id %in% data.all[, unique(id)]]
   gc()
   ## Prepare the same initial state for all harvest scenarios that are simulated in a loop below
-  data.sample = sample_data.f(sampleX, nSample)
+  data.sample <- sample_data.f(sampleX, nSample)
   if(rcpfile=="CurrClim") data.sample$id <- data.sample$CurrClimID
   areas <- data.sample$area
   totAreaSample <- sum(data.sample$area)
@@ -407,7 +408,9 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   }
   initPrebas$yassoRun <- rep(1,initPrebas$nSites)
   nx <- dim(initSoilC)[3]
-  if(!is.null(initSoilC)) initPrebas$soilC[,1,,,1:nx] <- initSoilC
+  layers <- dim(initPrebas$soilC)[5]
+  #if(!is.null(initSoilC)) initPrebas$soilC[,1,,,1:nx] <- initSoilC
+  if(!is.null(initSoilC)) initPrebas$soilC[,1,,,1:layers] <- initSoilC[,,,1:layers]
   
   print(paste0("harvest scenario ", harvScen))
   print(paste0("harvest intensity ", harvInten))
@@ -584,7 +587,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
     save(unmanDeadW,manDeadW,file=paste0("initDeadWVss/reg",
                                          r_no,"_deadWV_mortMod",mortMod,".rdata"))
     return("deadWood volume at steady state saved")
-  }else{
+  } else {
     if(HSIruns){
       ###start. additional line to average the deadwood volume over the 3 regions used in Ismael runs
       load(paste0("initDeadWVss/reg4_deadWV_mortMod",mortMod,".rdata"))
@@ -697,10 +700,18 @@ check_management_vector <- function(management_vector, cons=0) {
 #'
 #' @examples
 management_to_region_multiOut <- function(region, management_vector, deadW, nYears) {
+  layers <- dim(region$multiOut)[4]
+  #print(layers)
   if(!any(is.na(management_vector))) {
+    if(layers==3){
     region$multiOut[management_vector,,8,1:3,1] <- region$multiOut[management_vector,,8,1:3,1] + 
       aperm(replicate(length(management_vector),(deadW$ssDeadW[1:nYears,])),c(3,1:2))
-  }
+    } else {
+      region$multiOut[management_vector,,8,1:layers,1] <- 
+        region$multiOut[management_vector,,8,1:layers,1] + 
+        t(replicate(length(management_vector),(deadW$ssDeadW[1:nYears,1:layers])))
+    }
+    }
   return(region)
 }
 
@@ -788,6 +799,7 @@ sample_data.f = function(data.all, nSample) {
   # summary(data.sample[, 3:11])
   
   for (col in colnames(data.sample)[c(3, 5:11)]) set(data.sample, j=col,
+#  for (col in colnames(data.sample)[c(3, 5:12,14)]) set(data.sample, j=col,
                                                      value=as.double(data.sample[[col]]))
   
   ## -----------------------------------------------------------------
