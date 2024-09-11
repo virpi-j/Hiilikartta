@@ -37,7 +37,8 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   }
   if(!is.na(initAge)){
     tSegs <- which(initAge==yearsToMem)
-    load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_startStates",r_no,".rdata"))
+    print(paste("Load age",initAge,"initial data."))
+    load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_startStates",r_no,"_fert",ferti,".rdata"))
     initGVOutSegs <- reStartMod$GVOut[,tSegs,]
     initmultiOutSegs <- reStartMod$multiOut[,tSegs,,,]
     initSoilCSegs <- reStartSoil[,tSegs,,,]

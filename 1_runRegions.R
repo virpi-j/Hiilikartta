@@ -7,7 +7,7 @@ set.seed(1)
 setwd("~/Hiilikartta")
 nSitesRun <-10000
 nSitesRun0 <- 50
-if(!toFile) nSitesRun <-1000
+if(!toFile) nSitesRun <-10000
 fertmax <- 6 # max fert type
 CSCrun <- T
 vPREBAS <- "newVersion"
@@ -104,10 +104,13 @@ species <- c(100,0,0,0) # pine, spruce, birch, deciduous
 harvSceni <- "NoHarv"
 harvScens <- c("NoHarv","Mitigation","BaseLow","adapt","baseTapio", "Base")
 ferti <- 1
-for(harvSceni in harvScens){
-  for(initAge in c(NA,yearsToMem)){ # 50#NA
-    for(ferti in 1:fertmax){
-      time0 <- Sys.time()
+runPerHarvScen <- function(harvSceni){
+  #for(harvSceni in harvScens){
+  for(ferti in 1:fertmax){
+    time0 <- Sys.time()
+    outputAgei <-list()
+    for(initAgei in 1:length(c(NA,yearsToMem))){ # 50#NA
+      initAge <- c(NA,yearsToMem)[initAgei]
       print(paste("fert =",ferti))
       toMem <- ls()
       dataS <- dataSorig
@@ -155,14 +158,14 @@ for(harvSceni in harvScens){
       if(manualRun){
         RCP=climScen; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=NULL; P0currclim=NA; fT0=NA; sampleID <- 1
       }
-      if(!toFile){
+      #if(!toFile){
         out <- lapply(sampleIDs, function(jx) {
           runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", RCP = climScen, initAge = initAge)})
-      } else {
-        out <- mclapply(sampleIDs, function(jx) {
-          runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = outType, RCP = climScen, initAge = initAge)
-        }, mc.cores = nCores,mc.silent=FALSE)      
-      }
+      #} else {
+      #  out <- mclapply(sampleIDs, function(jx) {
+      #    runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = outType, RCP = climScen, initAge = initAge)
+      #  }, mc.cores = nCores,mc.silent=FALSE)      
+      #}
       if(harvSceni=="NoHarv" & is.na(initAge)){
         multiOut <- array(0,dim = c(dim(out[[1]]$restartMod$multiOut),length(sampleIDs)))
         GVOut <- array(0,dim = c(dim(out[[1]]$restartMod$GVout),length(sampleIDs)))
@@ -182,7 +185,7 @@ for(harvSceni in harvScens){
         reStartMod <- list(multiOut, GVOut)
         names(reStartMod) <- c("multiOut", "GVOut")
         save(reStartMod,reStartSoil,
-             file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_startStates",r_no,".rdata"))
+             file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_startStates",r_no,"_fert",ferti,".rdata"))
         
       }
       rm(list=setdiff(ls(),c(toMem,"out")))
@@ -199,53 +202,61 @@ for(harvSceni in harvScens){
         wGV[,,ij] <- out[[ij]]$wGV
         soilC[,,ij] <- out[[ij]]$soilC
       }
-      output[[ferti]] <- list(V, age, nep, wTot, wGV, soilC)
-      names(output[[ferti]]) <- c("V", "age", "nep", "wTot", "wGV", "soilC")
+      outputAgei[[initAgei]] <- list(V, age, nep, wTot, wGV, soilC)
+      names(outputAgei[[initAgei]]) <- c("V", "age", "nep", "wTot", "wGV", "soilC")
       print(Sys.time()-time0)
     }
+    output[[ferti]] <- outputAgei
+    names(output[[ferti]]) <- paste0("initAge",c(0, yearsToMem))
+  }
+  names(output) <- paste0("fert",1:fertmax)
+  
+  outFileePath <-"/scratch/project_2000994/PREBASruns/PREBAStesting/"
+  #if(is.na(initAge)) initAge <- 0
+  outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
+                     "_species",which(species>0),".pdf")
+  pdf(outFilee)
+  par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
+  for(ij in 1:length(output[[1]])){
+    ymax <- max(output[[1]][[1]][[ij]])
+    ymin <- min(output[[1]][[1]][[ij]])
+    for(ferti in 1:fertmax){
+      for(agei in 1:length(c(0,yearsToMem))){
+      ymax <- max(ymax,max(colMeans(output[[ferti]][[agei]][[ij]])))
+      ymin <- min(ymin,min(colMeans(output[[ferti]][[agei]][[ij]])))
+      }
+    }
+    ylims <- c(ymin,ymax)
     
-    outFileePath <-"/scratch/project_2000994/PREBASruns/PREBAStesting/"
-    if(is.na(initAge)) initAge <- 0
-    outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
-                       "_species",which(species>0),"_initAge",initAge,".pdf")
-    pdf(outFilee)
-    par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
-    for(ij in 1:length(output[[1]])){
-      ymax <- max(output[[ferti]][[1]])
-      for(ferti in 1:fertmax)   ymax <- max(ymax,max(colMeans(output[[ferti]][[ij]])))
-      ymin <- min(output[[ferti]][[1]])
-      for(ferti in 1:fertmax)   ymin <- min(ymin,min(colMeans(output[[ferti]][[ij]])))
-      ylims <- c(ymin,ymax)
-      
+    for(agei in 1:length(c(0,yearsToMem))){
       for(ferti in 1:fertmax){
-        if(names(output[[ferti]])[ij]!="age"){
-          tmp <- output[[ferti]][[ij]]
+        if(names(output[[ferti]][[agei]])[ij]!="age"){
+          tmp <- output[[ferti]][[agei]][[ij]]
           xi <- apply(tmp,2:3,mean)
           xmean <- apply(tmp,2,mean)
-          timei <- 1:ncol(output[[ferti]][[ij]])
-          agei <- apply(output[[ferti]]$age,2:3,mean)
-          agemean <- apply(output[[ferti]]$age,2,mean)
-          plot(agemean,xmean,xlab="age",ylab=names(output[[ferti]])[ij],
+          timei <- 1:ncol(output[[ferti]][[agei]][[ij]])
+          ages <- apply(output[[ferti]][[agei]]$age,2:3,mean)
+          agemean <- apply(output[[ferti]][[agei]]$age,2,mean)
+          plot(agemean,xmean,xlab="age",ylab=names(output[[ferti]][[agei]])[ij],
                type="l",ylim=ylims,lwd=2,
-               main=paste("fert =",ferti))
+               main=paste("fert =",ferti,"init year",c(0,yearsToMem)[agei]))
           for(ik in sampleIDs){ # go through climate models
             #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
-            lines(agei[,ik],xi[,ik],col="blue")
+            lines(ages[,ik],xi[,ik],col="blue")
           }
           if(ymin<0) lines(c(min(agei),max(agei)),c(0,0),col="black")
         }
       }
-      
+    }
+    for(agei in 1:length(c(0,yearsToMem))){
       for(ferti in 1:fertmax){
-        tmp <- output[[ferti]][[ij]]
+        tmp <- output[[ferti]][[agei]][[ij]]
         xi <- apply(tmp,2:3,mean)
         xmean <- apply(tmp,2,mean)
-        time <- 1:ncol(output[[ferti]][[ij]])
-        #agei <- apply(output[[ferti]]$age,2:3,mean)
-        #agemean <- apply(output[[ferti]]$age,2,mean)
-        plot(time,xmean,xlab="time",ylab=names(output[[ferti]])[ij],
-             type="l",ylim=ylims,lwd=2,
-             main=paste("fert =",ferti))
+        time <- 1:ncol(output[[ferti]][[agei]][[ij]])
+        plot(time,xmean,xlab="time",ylab=names(output[[ferti]][[agei]])[ij],
+           type="l",ylim=ylims,lwd=2,
+           main=paste("fert =",ferti,"init year",c(0,yearsToMem)[agei]))
         for(ik in sampleIDs){ # go through climate models
           #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
           lines(time,xi[,ik],col="blue")
@@ -253,13 +264,23 @@ for(harvSceni in harvScens){
         if(ymin<0) lines(c(min(time),max(time)),c(0,0),col="black")
       }
     }
-    dev.off()
-    outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
-                       "_species",which(species>0),"_initAge",initAge,".rdata")
-    save(output,file=outFilee)
   }
+  dev.off()
+  outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
+                     "_species",which(species>0),".rdata")
+  save(output,file=outFilee)
+  print(paste("Saved file",outFilee))
+}
+###########
+
+runOut <- lapply(harvScens[1], function(jx) {
+  runPerHarvScen(jx)})
   
-}  
+runOut <- mclapply(harvScens[-1], function(jx) {
+  runPerHarvScen(jx)
+}, mc.cores = 5, mc.silent=FALSE)      
+
+
 ###########
 
 file.remove(paste0(path_initiSoilC,"initSoilCunc/forCent",r_no,"/initSoilC.rdata"))
