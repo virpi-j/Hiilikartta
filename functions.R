@@ -14,7 +14,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
                      funPreb = regionPrebas,
                      initSoilCreStart=NULL,
                      outModReStart=NULL,reStartYear=1,
-                     sampleX=NULL,P0currclim=NA, fT0=NA){
+                     sampleX=NULL,P0currclim=NA, fT0=NA, initAge=NA){
   # outType determines the type of output:
   # dTabs -> standard run, mod outputs saved as data.tables 
   # testRun-> test run reports the mod out and initPrebas as objects
@@ -35,7 +35,14 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
     initilizeSoil=F
     initSoilC <- initSoilCreStart[,1,,,]
   }
-  
+  if(!is.na(initAge)){
+    tSegs <- which(initAge==yearsToMem)
+    load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_startStates",r_no,".rdata"))
+    initGVOutSegs <- reStartMod$GVOut[,tSegs,]
+    initmultiOutSegs <- reStartMod$multiOut[,tSegs,,,]
+    initSoilCSegs <- reStartSoil[,tSegs,,,]
+  }
+    
   if(is.null(sampleX)){
     sampleX <- ops[[1]]
     #    sampleX <- ops[[sampleID]]
@@ -187,20 +194,6 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
       }
     }
   }
-  ## Loop regions -------------------------------------------------------
-  # for (r_no in regions) {
-  # print(date())
-  # print(paste("Region", r_no) )
-  # r_no=7
-  ## Load samples from regions; region-files include every 1000th pixel
-  ## Pixel data are from 16 m x 16 m cells, but all numbers are per unit area.
-  ## Model also produces per values  per hectar or m2.
-  ## Note also that some of the pixels are non-forest (not metsamaa, kitumaa, joutomaa)
-  ## or not inside Finland (32767) or may be cloudcovered (32766).
-  
-  # data.all = fread(paste(regiondatapath, "data.proc.", r_no, ".txt", sep=""))
-  # data.all = fread(paste("data.proc.", r_no, ".txt",sep=""))
-  # dat = dat[id %in% data.all[, unique(id)]]
   gc()
   ## Prepare the same initial state for all harvest scenarios that are simulated in a loop below
   data.sample <- sample_data.f(sampleX, nSample)
@@ -212,24 +205,8 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   
   Region = nfiareas[ID==r_no, Region]
   
-  ###set parameters
-  # if(outType %in% c("uncRun","uncSeg")){
-  ###set parameters
-  # if(outType %in% c("uncRun","uncSeg")){
   HcFactor <- 1
-  #if(outType %in% c("uncRun","uncSeg")){
-  #  pCrobasX <- pCROBASr[[sampleID]]
-  #  pPRELES <- pPRELr[sampleID,]
-  #  pYAS <- pYASr[sampleID,]
-  #  HcFactor <- HcFactorr[sampleID] 
-  #  print(paste("sampleID",sampleID,"HcFactor =",HcFactor))
-  #}
-  ## Second, continue now starting from soil SS
-  #initPrebas = create_prebas_input.f(r_no, clim, data.sample, nYears = nYears,
-  #                                   startingYear = startingYear,domSPrun=domSPrun,
-  #                                   harv=harvScen, HcFactorX=HcFactor,
-  #                                   initSoilC=initSoilCreStart, reStartYear=reStartYear,
-  #                                   outModReStart=outModReStart)
+  
   initPrebas = create_prebas_input_adapt.f(r_no, clim, data.sample, nYears = nYears,
                                            startingYear = startingYear,domSPrun=domSPrun,
                                            harv=harvScen, HcFactorX=HcFactor, 
@@ -240,6 +217,11 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   #  initPrebas$pYASSO <- pYAS
   #  initPrebas$pCROBAS<-pCrobasX
   #}
+  if(!is.na(initAge)){
+    initPrebas$GVout[1:nSitesRun0,1,] <- initGVOutSegs    
+    initPrebas$multiOut[1:nSitesRun0,1,,,] <- initmultiOutSegs
+    initPrebas$multiInitVar[1:nSitesRun0,,] <- initmultiOutSegs[,c("species","age","H","D","BA","Hc_base","Ac"),,1]
+  }
   
   opsna <- which(is.na(initPrebas$multiInitVar))
   initPrebas$multiInitVar[opsna] <- 0.
@@ -385,6 +367,10 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
     if(!(harvScen =="Base" & harvInten == "Base") | rcps!="CurrClim"){
       load(paste0("initSoilCunc/forCent",r_no,"/initSoilC.rdata"))
       print(paste0("initsoilID loaded"))
+    }
+    if(!is.na(initAge)){
+      initSoilC[1:nSitesRun0,,,] <- initSoilCSegs
+      
     }
   }
   initPrebas$yassoRun <- rep(1,initPrebas$nSites)
@@ -644,8 +630,19 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
     wGV <- region$GVout[1:nSitesRun0,,4]
     soilC <- region$multiOut[1:nSitesRun0,,"soilC",1,1]
     
-    out <- list(V, age, nep, wTot, wGV, soilC)
-    names(out) <- c("V", "age", "nep", "wTot", "wGV", "soilC")
+    if(harvScen=="NoHarv" & is.na(initAge)){
+      print("Save init states for ages ");print(yearsToMem)
+      reStartMod <- list()
+      reStartMod$GVout <- region$GVout[1:nSitesRun0,yearsToMem,]
+      reStartMod$multiOut <- region$multiOut[1:nSitesRun0,yearsToMem,,,]
+      reStartSoil = region$soilC[1:nSitesRun0,yearsToMem,,,]
+      out <- list(V, age, nep, wTot, wGV, soilC,reStartMod,reStartSoil)
+      names(out) <- c("V", "age", "nep", "wTot", "wGV", "soilC","restartMod","reStartSoil")
+    } else {
+      out <- list(V, age, nep, wTot, wGV, soilC)
+      names(out) <- c("V", "age", "nep", "wTot", "wGV","soilC")
+    }
+    
     return(out)
     #return("all outs saved")  
   } 
@@ -1123,17 +1120,12 @@ yasso.mean.climate.f = function(dat, data.sample, startingYear, nYears){
 
 prep.climate.f = function(dat, data.sample, startingYear, nYears){
   dat = dat[id %in% data.sample[, unique(id)]]
-  # if(rcps== "CurrClim.rdata"){
-  #   dat[, Year:= as.numeric(floor(rday/366)+1971)]
-  #   dat = dat[Year >= startingYear]
-  #   
-  # }else{
   dat[, pvm:= as.Date('1980-01-01') - 1 + rday ]
   dat[, DOY:= as.numeric(format(pvm, "%j"))]
   dat[, Year:= as.numeric(format(pvm, "%Y"))]
   dat = dat[Year >= startingYear]
   dat[DOY==366, DOY:=365]
-  # }
+    
   id = dat[,unique(id)]
   PARtran = t( dcast(dat[, list(id, rday, PAR)], rday ~ id,
                      value.var="PAR")[, -1])
