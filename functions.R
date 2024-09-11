@@ -207,7 +207,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   if(rcpfile=="CurrClim") data.sample$id <- data.sample$CurrClimID
   areas <- data.sample$area
   totAreaSample <- sum(data.sample$area)
-  
+  print(paste("Simulate for ",nYears,"years."))
   clim = prep.climate.f(dat, data.sample, startingYear, nYears)
   
   Region = nfiareas[ID==r_no, Region]
@@ -380,30 +380,11 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   if(harvInten == "MaxSust"){cutArX <- cutArX * 1.2}
   if(harvScen == "NoHarv"){cutArX <- cutArX * 0.}
   
-  # }else{
-  #   cutArX <- NA
-  # } 
-  # initPrebas$energyCut <- rep(0.,length(initPrebas$energyCut))
-  # HarvLim1 <- rep(0,2)
-  # save(initPrebas,HarvLim1,file=paste0("test1",harvScen,".rdata"))
-  # region <- regionPrebas(initPrebas)
   ###run PREBAS
   if(initilizeSoil){
     if(!(harvScen =="Base" & harvInten == "Base") | rcps!="CurrClim"){
-      #if(RCP>0){#if(!outType %in% c("uncRun","uncSeg")){
-      #  if(!harvScen %in% c("protect","protectNoAdH","protectTapio")){
-      #    if(is.null(initSoilC)){
-      #      if(identical(landClassX,1:3)) load(paste0("initSoilC/forCent",r_no,"/initSoilC_",sampleID,"_LandClass1to3.rdata"))
-      #      if(identical(landClassX,1:2)) load(paste0("initSoilC/forCent",r_no,"/initSoilC_",sampleID,"_LandClass1to2.rdata"))
-      #      if(identical(landClassX,1)) load(paste0("initSoilC/forCent",r_no,"/initSoilC_",sampleID,"_LandClass1.rdata"))
-      #    }
-      #  }
-      #} else{ # if UncRun or uncSeg
-        load(paste0("initSoilCunc/forCent",r_no,"/initSoilC.rdata"))
-        print(paste0("initsoilID loaded"))
-      #}
-      # initPrebas$yassoRun <- rep(1,initPrebas$nSites)
-      # initPrebas$soilC[,1,,,] <- initSoilC
+      load(paste0("initSoilCunc/forCent",r_no,"/initSoilC.rdata"))
+      print(paste0("initsoilID loaded"))
     }
   }
   initPrebas$yassoRun <- rep(1,initPrebas$nSites)
@@ -581,11 +562,13 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   unmanFor <- which(sampleX$oldCons==1)
   unmanFor <- check_management_vector(management_vector = unmanFor, cons = 1)
   
-  if(outType=="ststDeadW"){
-    unmanDeadW <- initDeadW(region,unmanFor,yearsDeadW)
+  if(outType=="ststDeadW" | (harvScen=="Base" & harvInten =="Base" & initilizeSoil & rcps=="CurrClim")){
+    if(!exists("yearsDeadW")) yearsDeadW <- 1:nYears
+        unmanDeadW <- initDeadW(region,unmanFor,yearsDeadW)
     manDeadW <- initDeadW(region,manFor,yearsDeadW)
-    save(unmanDeadW,manDeadW,file=paste0("initDeadWVss/reg",
-                                         r_no,"_deadWV_mortMod",mortMod,".rdata"))
+    save(unmanDeadW,manDeadW,file=paste0("initSoilCunc/forCent",r_no,"/deadWV_mortMod",mortMod,".rdata"))
+    #save(unmanDeadW,manDeadW,file=paste0("initDeadWVss/reg",
+    #                                     r_no,"_deadWV_mortMod",mortMod,".rdata"))
     return("deadWood volume at steady state saved")
   } else {
     if(HSIruns){
@@ -603,16 +586,17 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
       deadW$ssDeadW <- (manxx4 + manxx6 + manxx13)/3
       ###end. additional line to average the deadwood volume over the 3 regions used in Ismael runs
     }else{
-      load(paste0("initDeadWVss/reg",
-                  r_no,"_deadWV_mortMod",mortMod,".rdata"))
+      load(file=paste0("initSoilCunc/forCent",r_no,"/deadWV_mortMod",mortMod,".rdata"))
+      #load(paste0("initDeadWVss/reg",
+      #            r_no,"_deadWV_mortMod",mortMod,".rdata"))
     }
     if(nrow(unmanDeadW$ssDeadW)<nYears){
       tmp<-unmanDeadW$ssDeadW
       tmp<-rbind(tmp,matrix(tmp[nrow(tmp),],ncol=ncol(tmp),nrow=nYears-nrow(tmp),byrow = T))
       unmanDeadW$ssDeadW<-tmp
-      tmp<-deadW$ssDeadW
+      tmp<-manDeadW$ssDeadW
       tmp<-rbind(tmp,matrix(tmp[nrow(tmp),],ncol=ncol(tmp),nrow=nYears-nrow(tmp),byrow = T))
-      deadW$ssDeadW<-tmp
+      manDeadW$ssDeadW<-tmp
     } 
     
     region <- management_to_region_multiOut(region = region, management_vector = manFor, deadW = manDeadW, nYears = nYears)
@@ -650,23 +634,30 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   }  
   
   if(outType=="testRun") return(list(region = region,initPrebas=initPrebas))
+  if(outType=="hiiliKartta"){
+    
+    V <- apply(region$multiOut[1:nSitesRun0,,"V",,1],1:2,"sum")
+    ageCols <- which(colMeans(region$multiOut[1:nSitesRun0,nYears,"age",,1])>0)
+    age <- apply(region$multiOut[1:nSitesRun0,,"age",ageCols,1],1:2,"mean")
+    nep <- apply(region$multiOut[1:nSitesRun0,,"NEP/SMI[layer_1]",,1],1:2,"sum")
+    wTot <- apply(region$multiOut[1:nSitesRun0,,c(24,25,31,32,33),,1],1:2,"sum")
+    wGV <- region$GVout[1:nSitesRun0,,4]
+    soilC <- region$multiOut[1:nSitesRun0,,"soilC",1,1]
+    
+    out <- list(V, age, nep, wTot, wGV, soilC)
+    names(out) <- c("V", "age", "nep", "wTot", "wGV", "soilC")
+    return(out)
+    #return("all outs saved")  
+  } 
   if(outType=="dTabs"){
     runModOut(sampleID, sampleX,region,r_no,harvScen,harvInten,rcpfile,areas,
               colsOut1,colsOut2,colsOut3,varSel,sampleForPlots)
-    return("all outs saved")  
+    #return("all outs saved")  
   } 
  
-  # rm(list=c("region","initPrebas")); gc()
-  # rm(list=setdiff(ls(), c(toMem,"toMem")))
-  # rm(out); gc()
-  # }###harvest loop
-  # } ###region loop
-  # }rcps loop
   print(paste("end clim model ID",sampleID))
   rm(list=setdiff(ls(), c(toMem,"toMem"))); gc()
-  
-  #print(uncRun)
-  # }
+
 }
 
 #' Make sure management vector is not integer(0). The management vector is a vector of row indexes in the original data

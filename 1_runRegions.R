@@ -5,8 +5,9 @@ if(length(dev.list())>0) dev.off()
 toFile <- F
 
 setwd("~/Hiilikartta")
-nSitesRun0 <- 100
-if(!toFile) nSitesRun <-200
+nSitesRun <-10000
+nSitesRun0 <- 50
+if(!toFile) nSitesRun <-10000
 CSCrun <- T
 vPREBAS <- "newVersion"
 r_no <- 4
@@ -62,12 +63,16 @@ dataS$lat <- location$y
 ops <- list(dataS)
 gc()
 toMem <- ls()
+startingYear = 2015
+endingYear = 2050
+nYears = endingYear-startingYear
+
 #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
 source("~/HiilikarttaGH/functions.R")
 outType <- "testRun"
 harvScen <- "Base"
 harvInten <- "Base"
-manualRun <- F
+manualRun <- T
 if(manualRun){
   RCP=0
   harvScen <- "Base"
@@ -87,95 +92,143 @@ out <- runModel(1,harvScen="Base",harvInten="Base",outType = outType)
 CoeffSim <- T
 ferti <- 1
 fertmax <- 6
-png("/scratch/project_2000994/PREBASruns/PREBAStesting/testPlots.png")
-par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
 dataSorig <- dataS
 output <- list()
+startingYear = 2015
+endingYear = 2100
+nYears = endingYear-startingYear
 
-for(ferti in 1:fertmax){
-  print(paste("Fert =",ferti))
-  toMem <- ls()
-  dataS <- dataSorig
-  if(CoeffSim){
-    simInitData <- data.table(ba = 0.01, age = 1, dbh = 0.01, pine = 100, spruce = 0,
-                              birch = 0, decid = 0, fert = ferti, h = 0.01, minpeat = 1,
-                              landclass = 1, cons = 0)
-    dataS$ba[1:nSitesRun0] <- simInitData$ba
-    dataS$age[1:nSitesRun0] <- simInitData$age
-    dataS$dbh[1:nSitesRun0] <- simInitData$dbh
-    dataS$pine[1:nSitesRun0] <- simInitData$pine
-    dataS$spruce[1:nSitesRun0] <- simInitData$spruce
-    dataS$birch[1:nSitesRun0] <- simInitData$birch
-    dataS$decid[1:nSitesRun0] <- simInitData$decid
-    dataS$fert[1:nSitesRun0] <- simInitData$fert
-    dataS$h[1:nSitesRun0] <- simInitData$h
-    dataS$minpeat[1:nSitesRun0] <- simInitData$minpeat
-    dataS$landclass[1:nSitesRun0] <- simInitData$landclass
-    dataS$cons[1:nSitesRun0] <- simInitData$cons
+species <- c(100,0,0,0) # pine, spruce, birch, deciduous
+#harvScen <- "baseTapio"
+#harvScen = "Base"
+harvScen <- "NoHarv"
+harvScens <- c("baseTapio", "Base", "NoHarv")
+for(harvScen in harvScens){
+  for(ferti in 1:fertmax){
+    time0 <- Sys.time()
+    print(paste("fert =",ferti))
+    toMem <- ls()
+    dataS <- dataSorig
+    if(CoeffSim){
+      simInitData <- data.table(ba = 0.01, age = 1, dbh = 0.01, pine = species[1], 
+                                spruce =  species[2], birch =  species[3], decid =  species[4], 
+                                fert = ferti, h = 0.01, minpeat = 1,
+                                landclass = 1, cons = 0)
+      dataS$ba[1:nSitesRun0] <- simInitData$ba
+      dataS$age[1:nSitesRun0] <- simInitData$age
+      dataS$dbh[1:nSitesRun0] <- simInitData$dbh
+      dataS$pine[1:nSitesRun0] <- simInitData$pine
+      dataS$spruce[1:nSitesRun0] <- simInitData$spruce
+      dataS$birch[1:nSitesRun0] <- simInitData$birch
+      dataS$decid[1:nSitesRun0] <- simInitData$decid
+      dataS$fert[1:nSitesRun0] <- simInitData$fert
+      dataS$h[1:nSitesRun0] <- simInitData$h
+      dataS$minpeat[1:nSitesRun0] <- simInitData$minpeat
+      dataS$landclass[1:nSitesRun0] <- simInitData$landclass
+      dataS$cons[1:nSitesRun0] <- simInitData$cons
+      
+      #simCol <- match(colnames(simInitData),colnames(dataS))
+      #dataS[,c(simCol)] <- 
+      #  data.table(matrix(simInitData,nSitesRun, ncol(simInitData), byrow = T))
+      
+      ops <- list(dataS)
+    }
     
-    #simCol <- match(colnames(simInitData),colnames(dataS))
-    #dataS[,c(simCol)] <- 
-    #  data.table(matrix(simInitData,nSitesRun, ncol(simInitData), byrow = T))
+    #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
+    source("~/HiilikarttaGH/functions.R")
+    harvInten <- "Base"
+    if(harvScen=="NoHarv") harvInten <- "NoHarv"
+    if(manualRun){
+      RCP=climScen; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=NULL; P0currclim=NA; fT0=NA; sampleID <- 1
+    }
     
-    ops <- list(dataS)
-  }
-  #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
-  source("~/HiilikarttaGH/functions.R")
-  harvScen <- "baseTapio"
-  harvScen = "Base"
-  #harvScen <- "NoHarv"
-  harvInten <- "Base"
-  if(harvScen=="NoHarv") harvInten <- "NoHarv"
-  if(manualRun){
-    RCP=climScen; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=NULL; P0currclim=NA; fT0=NA; sampleID <- 1
-  }
-  
-  if(!toFile){
-    out <- lapply(sampleIDs, function(jx) {
-      runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = outType, RCP = climScen)})
-  } else {
-    out <- mclapply(sampleIDs, function(jx) {
-      runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = outType, RCP = climScen)
-    }, mc.cores = nCores,mc.silent=FALSE)      
-  }
-  
-  rm(list=setdiff(ls(),c(toMem,"out")))
-  
-  V <- age <- nep <- wTot <- wGV <- soilC <- array(0,c(nSitesRun0,nYears,length(sampleIDs)),
-                                                   dimnames = list(paste0("site",1:nSitesRun0),
+    if(!toFile){
+      out <- lapply(sampleIDs, function(jx) {
+        runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", RCP = climScen)})
+    } else {
+      out <- mclapply(sampleIDs, function(jx) {
+        runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = outType, RCP = climScen)
+      }, mc.cores = nCores,mc.silent=FALSE)      
+    }
+    
+    rm(list=setdiff(ls(),c(toMem,"out")))
+    
+    V <- age <- nep <- wTot <- wGV <- soilC <- array(0,c(nSitesRun0,nYears,length(sampleIDs)),
+                                                     dimnames = list(paste0("site",1:nSitesRun0),
                                                                      2014+1:nYears,
                                                                      climMod))
-  for(ij in 1:length(out)){
-    #V[,,ij] <- apply(out[[ij]]$multiOut[,,"V",,1],1:2,"sum")
-    V[,,ij] <- apply(out[[ij]]$region$multiOut[1:nSitesRun0,,"V",,1],1:2,"sum")
-    age[,,ij] <- apply(out[[ij]]$region$multiOut[1:nSitesRun0,,"age",,1],1:2,"mean")
-    nep[,,ij] <- apply(out[[ij]]$region$multiOut[1:nSitesRun0,,"NEP/SMI[layer_1]",,1],1:2,"sum")
-    wTot[,,ij] <- apply(out[[ij]]$region$multiOut[1:nSitesRun0,,c(24,25,31,32,33),,1],1:2,"sum")
-    wGV[,,ij] <- out[[ij]]$region$GVout[1:nSitesRun0,,4]
-    soilC[,,ij] <- out[[ij]]$region$multiOut[1:nSitesRun0,,"soilC",1,1]
+    for(ij in 1:length(out)){
+      V[,,ij] <- out[[ij]]$V
+      age[,,ij] <- out[[ij]]$age
+      nep[,,ij] <- out[[ij]]$nep
+      wTot[,,ij] <- out[[ij]]$wTot
+      wGV[,,ij] <- out[[ij]]$wGV
+      soilC[,,ij] <- out[[ij]]$soilC
+    }
+    output[[ferti]] <- list(V, age, nep, wTot, wGV, soilC)
+    names(output[[ferti]]) <- c("V", "age", "nep", "wTot", "wGV", "soilC")
+    print(Sys.time()-time0)
   }
-  output[[ferti]] <- list(V, age, nep, wTot, wGV, soilC)
-  names(output[[ferti]]) <- c("V", "age", "nep", "wTot", "wGV", "soilC")
-  for(ij in 1:length(output[[ferti]])){
-    if(names(output[[ferti]])[ij]!="age"){
+
+  outFileePath <-"/scratch/project_2000994/PREBASruns/PREBAStesting/"
+  outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
+                     "_species",which(species>0),".pdf")
+  pdf(outFilee)
+  par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
+  for(ij in 1:length(output[[1]])){
+    ymax <- max(output[[ferti]][[1]])
+    for(ferti in 1:fertmax)   ymax <- max(ymax,max(colMeans(output[[ferti]][[ij]])))
+    ymin <- min(output[[ferti]][[1]])
+    for(ferti in 1:fertmax)   ymin <- min(ymin,min(colMeans(output[[ferti]][[ij]])))
+    ylims <- c(ymin,ymax)
+    
+    for(ferti in 1:fertmax){
+      if(names(output[[ferti]])[ij]!="age"){
+        tmp <- output[[ferti]][[ij]]
+        xi <- apply(tmp,2:3,mean)
+        xmean <- apply(tmp,2,mean)
+        timei <- 1:ncol(output[[ferti]][[ij]])
+        agei <- apply(output[[ferti]]$age,2:3,mean)
+        agemean <- apply(output[[ferti]]$age,2,mean)
+        plot(agemean,xmean,xlab="age",ylab=names(output[[ferti]])[ij],
+             type="l",ylim=ylims,lwd=2,
+             main=paste("fert =",ferti))
+        for(ik in sampleIDs){ # go through climate models
+          #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
+          lines(agei[,ik],xi[,ik],col="blue")
+        }
+        if(ymin<0) lines(c(min(agei),max(agei)),c(0,0),col="black")
+      }
+    }
+    
+    for(ferti in 1:fertmax){
       tmp <- output[[ferti]][[ij]]
       xi <- apply(tmp,2:3,mean)
       xmean <- apply(tmp,2,mean)
-      agei <- apply(output[[ferti]]$age,2:3,mean)
-      agemean <- apply(output[[ferti]]$age,2,mean)
-      ylims <- c(0,max(xmean))
-      plot(agemean,xmean,xlab="age",ylab=names(output[[ferti]])[ij],
+      time <- 1:ncol(output[[ferti]][[ij]])
+      #agei <- apply(output[[ferti]]$age,2:3,mean)
+      #agemean <- apply(output[[ferti]]$age,2,mean)
+      plot(time,xmean,xlab="time",ylab=names(output[[ferti]])[ij],
            type="l",ylim=ylims,lwd=2,
-           main=paste("Fert =",ferti))
+           main=paste("fert =",ferti))
       for(ik in sampleIDs){ # go through climate models
         #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
-        lines(agei[,ik],xi[,ik],col="blue")
+        lines(time,xi[,ik],col="blue")
       }
+      if(ymin<0) lines(c(min(time),max(time)),c(0,0),col="black")
     }
   }
+  dev.off()
+  outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
+                     "_species",which(species>0),".rdata")
+  save(output,file=outFilee)
 }
-dev.off()
+
+
+###########
+
 file.remove(paste0(path_initiSoilC,"initSoilCunc/forCent",r_no,"/initSoilC.rdata"))
+file.remove(paste0(path_initiSoilC,"initSoilCunc/forCent",r_no,"/deadWV_mortMod",mortMod,".rdata"))
 
 # models outputs to NAs, outputDT, initSoilC and plots
 Sys.chmod(list.dirs("NAs"), "0777",use_umask=FALSE)

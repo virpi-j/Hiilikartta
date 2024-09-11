@@ -127,6 +127,7 @@ domSPrun = 0   ### 1 -> run only dominant layer
 startingYear = 2015
 endingYear = 2100
 if(!exists("nYears")) nYears = endingYear-startingYear
+yearsToMem <- c(30,50,70) # For HiiliKartta, the initial ages to memory
 
 if(!exists("rcps")) rcps = "CurrClim" #c("CanESM2.rcp45.rdata","CanESM2.rcp85.rdata")#c("CurrClim","CanESM2.rcp26.rdata")#,"CanESM2.rcp45.rdata","CanESM2.rcp85.rdata")
 
