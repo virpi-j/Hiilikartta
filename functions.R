@@ -35,6 +35,8 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
     initilizeSoil=F
     initSoilC <- initSoilCreStart[,1,,,]
   }
+  #print(outType)
+  #if(outType=="hiiliKartta") print(paste("Initial age",initAge))
   if(!is.na(initAge)){
     tSegs <- which(initAge==yearsToMem)
     print(paste("Load age",initAge,"initial data."))
@@ -48,6 +50,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
     sampleX <- ops[[1]]
     #    sampleX <- ops[[sampleID]]
   }
+  #print(sampleX[1:3,])
   sampleX$oldCons <- sampleX$cons
   procInSample=F
   ####in the protection scenarios consider buffer to protection areas
@@ -219,10 +222,13 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   #  initPrebas$pCROBAS<-pCrobasX
   #}
   if(!is.na(initAge)){
+    print(paste0("update initial stages for age ",initAge))
     initPrebas$GVout[1:nSitesRun0,1,] <- initGVOutSegs    
     initPrebas$multiOut[1:nSitesRun0,1,,,] <- initmultiOutSegs
     initPrebas$multiInitVar[1:nSitesRun0,,] <- initmultiOutSegs[,c("species","age","H","D","BA","Hc_base","Ac"),,1]
   }
+  #print(initPrebas$multiInitVar[1,"age",])
+  #print(initPrebas$multiInitVar[1,"D",])
   
   opsna <- which(is.na(initPrebas$multiInitVar))
   initPrebas$multiInitVar[opsna] <- 0.
@@ -624,7 +630,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   if(outType=="hiiliKartta"){
     
     V <- apply(region$multiOut[1:nSitesRun0,,"V",,1],1:2,"sum")
-    print(V[1,1:10])
+    #print(V[1,1:10])
     ageCols <- which(colMeans(region$multiOut[1:nSitesRun0,nYears,"age",,1])>0)
     age <- apply(region$multiOut[1:nSitesRun0,,"age",ageCols,1],1:2,"mean")
     nep <- apply(region$multiOut[1:nSitesRun0,,"NEP/SMI[layer_1]",,1],1:2,"sum")

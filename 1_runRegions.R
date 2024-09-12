@@ -35,7 +35,7 @@ climModids <- sampleIDs <- 1:length(climMod) # for iterations
 rcps <- rcpsFile <-paste0(climMod[climModid],rcpx[climScen])
 rcpsName <- rcps
 
-source("~/HiilikarttaGH/settings.R")
+source("~/HiilikarttaGH/settings.R", local = T)
 #devtools::source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/settings.R")
 
 #setX=1
@@ -77,7 +77,7 @@ endingYear = 2050
 nYears = endingYear-startingYear
 
 #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
-source("~/HiilikarttaGH/functions.R")
+source("~/HiilikarttaGH/functions.R", local = T)
 outType <- "testRun"
 harvScen <- "Base"
 harvInten <- "Base"
@@ -143,12 +143,12 @@ runPerHarvScen <- function(harvSceni){
         #simCol <- match(colnames(simInitData),colnames(dataS))
         #dataS[,c(simCol)] <- 
         #  data.table(matrix(simInitData,nSitesRun, ncol(simInitData), byrow = T))
-        
+        print(dataS[1,])
         ops <- list(dataS)
       }
       
       #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
-      source("~/HiilikarttaGH/functions.R")
+      source("~/HiilikarttaGH/functions.R", local = T)
       harvInten <- "Base"
       harvScen <- "Base"
       if(harvSceni!="Base"){ 
