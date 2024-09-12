@@ -7,7 +7,6 @@ set.seed(1)
 setwd("~/Hiilikartta")
 nSitesRun <-10000
 nSitesRun0 <- 50
-if(!toFile) nSitesRun <-5000
 fertmax <- 6 # max fert type
 testaus <- F
 if(testaus){
