@@ -142,7 +142,7 @@ runPerHarvScen <- function(harvSceni){
         #simCol <- match(colnames(simInitData),colnames(dataS))
         #dataS[,c(simCol)] <- 
         #  data.table(matrix(simInitData,nSitesRun, ncol(simInitData), byrow = T))
-        print(dataS[1,])
+        #print(dataS[1,])
         ops <- list(dataS)
       }
       
