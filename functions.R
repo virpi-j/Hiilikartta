@@ -624,6 +624,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   if(outType=="hiiliKartta"){
     
     V <- apply(region$multiOut[1:nSitesRun0,,"V",,1],1:2,"sum")
+    print(V[1,1:10])
     ageCols <- which(colMeans(region$multiOut[1:nSitesRun0,nYears,"age",,1])>0)
     age <- apply(region$multiOut[1:nSitesRun0,,"age",ageCols,1],1:2,"mean")
     nep <- apply(region$multiOut[1:nSitesRun0,,"NEP/SMI[layer_1]",,1],1:2,"sum")

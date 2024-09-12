@@ -7,8 +7,14 @@ set.seed(1)
 setwd("~/Hiilikartta")
 nSitesRun <-10000
 nSitesRun0 <- 50
-if(!toFile) nSitesRun <-10000
+if(!toFile) nSitesRun <-5000
 fertmax <- 6 # max fert type
+testaus <- F
+if(testaus){
+  nSitesRun <-1000
+  fertmax <- 2 # max fert type
+  yearsToMem <- c(30,50)
+}
 CSCrun <- T
 vPREBAS <- "newVersion"
 r_no <- 4
@@ -20,15 +26,17 @@ landClassX <- 1:2
 climatepath = "/scratch/project_2000994/RCP/"
 climMod <- c("CanESM2.","CNRM.","GFDL.","HadGEM2.","MIROC.")
 rcpx <- c("rcp26","rcp45","rcp85")
-
+if(testaus){
+  climMod <- c("CanESM2.","CNRM.")
+}
 climScen <- 1 # 1=rcp2.6, 2=rcp4.5, 3=rcp8.5
 climModid <- 1 # 
 climModids <- sampleIDs <- 1:length(climMod) # for iterations
 rcps <- rcpsFile <-paste0(climMod[climModid],rcpx[climScen])
 rcpsName <- rcps
 
-#source("~/HiilikarttaGH/settings.R")
-devtools::source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/settings.R")
+source("~/HiilikarttaGH/settings.R")
+#devtools::source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/settings.R")
 
 #setX=1
 #sampleIDs <- 1
@@ -160,7 +168,8 @@ runPerHarvScen <- function(harvSceni){
       }
       #if(!toFile){
         out <- lapply(sampleIDs, function(jx) {
-          runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", RCP = climScen, initAge = initAge)})
+          runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
+                   RCP = climScen, initAge = initAge)})
       #} else {
       #  out <- mclapply(sampleIDs, function(jx) {
       #    runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = outType, RCP = climScen, initAge = initAge)
@@ -208,6 +217,10 @@ runPerHarvScen <- function(harvSceni){
     }
     output[[ferti]] <- outputAgei
     names(output[[ferti]]) <- paste0("initAge",c(0, yearsToMem))
+    print(paste0(harvScen," / fert",ferti," / age0 / V:"))
+    print(output[[ferti]][[1]]$V[1,1:10,1])
+    print(paste0(harvScen," / fert",ferti," / age30 / V:"))
+    print(output[[ferti]][[2]]$V[1,1:10,1])
   }
   names(output) <- paste0("fert",1:fertmax)
   
@@ -244,7 +257,7 @@ runPerHarvScen <- function(harvSceni){
             #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
             lines(ages[,ik],xi[,ik],col="blue")
           }
-          if(ymin<0) lines(c(min(agei),max(agei)),c(0,0),col="black")
+          if(ymin<0) lines(c(min(ages),max(ages)),c(0,0),col="black")
         }
       }
     }
