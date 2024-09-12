@@ -10,7 +10,7 @@ nSitesRun0 <- 50
 fertmax <- 6 # max fert type
 testaus <- F
 if(testaus){
-  nSitesRun <-1000
+  nSitesRun <-500
   fertmax <- 2 # max fert type
   yearsToMem <- c(30,50)
 }
@@ -80,7 +80,7 @@ source("~/HiilikarttaGH/functions.R", local = T)
 outType <- "testRun"
 harvScen <- "Base"
 harvInten <- "Base"
-manualRun <- T
+manualRun <- F
 if(manualRun){
   RCP=0
   harvScen <- "Base"
@@ -112,13 +112,25 @@ harvSceni <- "NoHarv"
 harvScens <- c("NoHarv","Mitigation","BaseLow","adapt","baseTapio", "Base")
 ferti <- 1
 runPerHarvScen <- function(harvSceni){
-  #for(harvSceni in harvScens){
+  if(harvSceni=="Base"){ 
+    harvInten <- "Base"
+    harvScen <- "Base"
+  } else if(harvSceni=="BaseLow"){ 
+    harvScen <- "Base"
+    harvInten <- "Low"
+  } else if(harvSceni=="NoHarv"){ 
+    harvInten <- "NoHarv"
+    harvScen <- "NoHarv"
+  } else { 
+    harvScen <- harvSceni
+    harvInten <- "Low"
+  }
   for(ferti in 1:fertmax){
+    print(paste(harvScen,"/",harvInten,"/ fert =",ferti))
     time0 <- Sys.time()
     outputAgei <-list()
     for(initAgei in 1:length(c(NA,yearsToMem))){ # 50#NA
       initAge <- c(NA,yearsToMem)[initAgei]
-      print(paste("fert =",ferti))
       toMem <- ls()
       dataS <- dataSorig
       if(CoeffSim){
@@ -148,20 +160,6 @@ runPerHarvScen <- function(harvSceni){
       
       #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
       source("~/HiilikarttaGH/functions.R", local = T)
-      harvInten <- "Base"
-      harvScen <- "Base"
-      if(harvSceni!="Base"){ 
-        harvScen <- harvSceni
-        harvInten <- "Low"
-      }
-      if(harvSceni=="BaseLow"){ 
-        harvScen <- "Base"
-        harvInten <- "Low"
-      }
-      if(harvSceni=="NoHarv"){ 
-        harvInten <- "NoHarv"
-        harvScen <- "NoHarv"
-      }
       if(manualRun){
         RCP=climScen; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=NULL; P0currclim=NA; fT0=NA; sampleID <- 1
       }
