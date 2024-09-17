@@ -4,7 +4,7 @@ if(length(dev.list())>0) dev.off()
 
 toFile <- F
 set.seed(1)
-setwd("~/Hiilikartta")
+setwd("~/HiilikarttaGH/")
 nSitesRun <-10000
 nSitesRun0 <- 50
 fertmax <- 6 # max fert type
@@ -72,7 +72,7 @@ ops <- list(dataS)
 gc()
 toMem <- ls()
 startingYear = 2015
-endingYear = 2050
+endingYear = 2100
 nYears = endingYear-startingYear
 
 #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
@@ -105,7 +105,7 @@ startingYear = 2015
 endingYear = 2100
 nYears = endingYear-startingYear
 
-species <- c(100,0,0,0) # pine, spruce, birch, deciduous
+species <- c(0,100,0,0) # pine, spruce, birch, deciduous
 #harvScen <- "baseTapio"
 #harvScen = "Base"
 harvSceni <- "NoHarv"
@@ -125,6 +125,7 @@ runPerHarvScen <- function(harvSceni){
     harvScen <- harvSceni
     harvInten <- "Low"
   }
+  print(paste("Species",which(species>0),"run..."))
   for(ferti in 1:fertmax){
     print(paste(harvScen,"/",harvInten,"/ fert =",ferti))
     time0 <- Sys.time()
@@ -227,7 +228,7 @@ runPerHarvScen <- function(harvSceni){
                      "_species",which(species>0),".pdf")
   pdf(outFilee)
   par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
-  for(ij in 1:length(output[[1]])){
+  for(ij in 1:length(output[[1]][[1]])){
     ymax <- max(output[[1]][[1]][[ij]])
     ymin <- min(output[[1]][[1]][[ij]])
     for(ferti in 1:fertmax){
@@ -290,6 +291,85 @@ runOut <- mclapply(harvScens[-1], function(jx) {
   runPerHarvScen(jx)
 }, mc.cores = 5, mc.silent=FALSE)      
 
+
+###########
+if(FALSE){
+  for(harvSceni in harvScens){
+    if(harvSceni=="Base"){ 
+      harvInten <- "Base"
+      harvScen <- "Base"
+    } else if(harvSceni=="BaseLow"){ 
+      harvScen <- "Base"
+      harvInten <- "Low"
+    } else if(harvSceni=="NoHarv"){ 
+      harvInten <- "NoHarv"
+      harvScen <- "NoHarv"
+    } else { 
+      harvScen <- harvSceni
+      harvInten <- "Low"
+    }
+    outFileePath <-"/scratch/project_2000994/PREBASruns/PREBAStesting/"
+    
+    outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
+                       "_species",which(species>0),".rdata")
+    load(file=outFilee)
+    
+    #if(is.na(initAge)) initAge <- 0
+    outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
+                       "_species",which(species>0),".pdf")
+    pdf(outFilee)
+    par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
+    for(ij in 1:length(output[[1]][[1]])){
+      ymax <- max(output[[1]][[1]][[ij]])
+      ymin <- min(output[[1]][[1]][[ij]])
+      for(ferti in 1:fertmax){
+        for(agei in 1:length(c(0,yearsToMem))){
+          ymax <- max(ymax,max(colMeans(output[[ferti]][[agei]][[ij]])))
+          ymin <- min(ymin,min(colMeans(output[[ferti]][[agei]][[ij]])))
+        }
+      }
+      ylims <- c(ymin,ymax)
+      
+      for(agei in 1:length(c(0,yearsToMem))){
+        for(ferti in 1:fertmax){
+          if(names(output[[ferti]][[agei]])[ij]!="age"){
+            tmp <- output[[ferti]][[agei]][[ij]]
+            xi <- apply(tmp,2:3,mean)
+            xmean <- apply(tmp,2,mean)
+            timei <- 1:ncol(output[[ferti]][[agei]][[ij]])
+            ages <- apply(output[[ferti]][[agei]]$age,2:3,mean)
+            agemean <- apply(output[[ferti]][[agei]]$age,2,mean)
+            plot(agemean,xmean,xlab="age",ylab=names(output[[ferti]][[agei]])[ij],
+                 type="l",ylim=ylims,lwd=2,
+                 main=paste("fert =",ferti,"init year",c(0,yearsToMem)[agei]))
+            for(ik in sampleIDs){ # go through climate models
+              #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
+              lines(ages[,ik],xi[,ik],col="blue")
+            }
+            if(ymin<0) lines(c(min(ages),max(ages)),c(0,0),col="black")
+          }
+        }
+      }
+      for(agei in 1:length(c(0,yearsToMem))){
+        for(ferti in 1:fertmax){
+          tmp <- output[[ferti]][[agei]][[ij]]
+          xi <- apply(tmp,2:3,mean)
+          xmean <- apply(tmp,2,mean)
+          time <- 1:ncol(output[[ferti]][[agei]][[ij]])
+          plot(time,xmean,xlab="time",ylab=names(output[[ferti]][[agei]])[ij],
+               type="l",ylim=ylims,lwd=2,
+               main=paste("fert =",ferti,"init year",c(0,yearsToMem)[agei]))
+          for(ik in sampleIDs){ # go through climate models
+            #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
+            lines(time,xi[,ik],col="blue")
+          }
+          if(ymin<0) lines(c(min(time),max(time)),c(0,0),col="black")
+        }
+      }
+    }
+    dev.off()
+  }    
+}
 
 ###########
 
