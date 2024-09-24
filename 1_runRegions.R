@@ -8,7 +8,7 @@ setwd("~/HiilikarttaGH/")
 nSitesRun <-10000
 nSitesRun0 <- 50
 fertmax <- 6 # max fert type
-testaus <- F
+testaus <- T
 if(testaus){
   nSitesRun <-500
   fertmax <- 2 # max fert type
@@ -16,7 +16,8 @@ if(testaus){
 }
 CSCrun <- T
 vPREBAS <- "newVersion"
-r_no <- 4
+source("/scratch/project_2000994/PREBASruns/PREBAStesting/localSettins.R",local=T)
+#r_no <- 4
 path_wrkdir  <- "/scratch/project_2000994/PREBASruns/finRuns/"
 path_initiSoilC <- "/scratch/project_2000994/PREBASruns/finRuns/"
 path_output <- "/scratch/project_2000994/PREBASruns/finRuns/"
@@ -91,7 +92,7 @@ if(manualRun){
   landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas
   initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1
   sampleX=NULL; P0currclim=NA; fT0=NA
-  sampleID <- 1
+  sampleID = 1; initAge=NA
 }
 
 print(paste("Run initialization for region",r_no,", sample size",nSitesRun))
@@ -105,13 +106,19 @@ startingYear = 2015
 endingYear = 2100
 nYears = endingYear-startingYear
 
-species <- c(0,100,0,0) # pine, spruce, birch, deciduous
-#harvScen <- "baseTapio"
-#harvScen = "Base"
+nsets <- 5
+speciess <- array(0,c(5,4),dimnames = list(paste0("iter",1:nsets),c("pine","spruce","birch","decid")))
+speciess[1,] <- c(100,0,0,0)
+speciess[2,] <- c(0,100,0,0) # pine, spruce, birch, deciduous
+speciess[3,] <- c(0,0,100,0)
+speciess[4,] <- c(0,0,0,100)
+speciess[5,] <- c(50,0,0,50)
+
 harvSceni <- "NoHarv"
 harvScens <- c("NoHarv","Mitigation","BaseLow","adapt","baseTapio", "Base")
+harvScens <- c("NoHarv","baseTapio")
 ferti <- 1
-runPerHarvScen <- function(harvSceni){
+runPerHarvScen <- function(harvSceni, dataS=dataSorig){
   if(harvSceni=="Base"){ 
     harvInten <- "Base"
     harvScen <- "Base"
@@ -125,6 +132,8 @@ runPerHarvScen <- function(harvSceni){
     harvScen <- harvSceni
     harvInten <- "Low"
   }
+  n0only <- F
+  if(harvSceni%in%c("NoHarv","baseTapio")) n0only <- T
   print(paste("Species",which(species>0),"run..."))
   for(ferti in 1:fertmax){
     print(paste(harvScen,"/",harvInten,"/ fert =",ferti))
@@ -151,23 +160,18 @@ runPerHarvScen <- function(harvSceni){
         dataS$minpeat[1:nSitesRun0] <- simInitData$minpeat
         dataS$landclass[1:nSitesRun0] <- simInitData$landclass
         dataS$cons[1:nSitesRun0] <- simInitData$cons
-        
-        #simCol <- match(colnames(simInitData),colnames(dataS))
-        #dataS[,c(simCol)] <- 
-        #  data.table(matrix(simInitData,nSitesRun, ncol(simInitData), byrow = T))
-        #print(dataS[1,])
-        ops <- list(dataS)
+        if(n0only) dataS <- dataS[1:nSitesRun0,]
+        ops <<- list(dataS)
       }
       
       #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
-      source("~/HiilikarttaGH/functions.R", local = T)
+      #source("~/HiilikarttaGH/functions.R", local = T)
       if(manualRun){
         RCP=climScen; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=NULL; P0currclim=NA; fT0=NA; sampleID <- 1
       }
-      #if(!toFile){
-        out <- lapply(sampleIDs, function(jx) {
-          runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
-                   RCP = climScen, initAge = initAge)})
+      out <- lapply(sampleIDs, function(jx) {
+        runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
+                 RCP = climScen, initAge = initAge)})
       #} else {
       #  out <- mclapply(sampleIDs, function(jx) {
       #    runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = outType, RCP = climScen, initAge = initAge)
@@ -178,9 +182,15 @@ runPerHarvScen <- function(harvSceni){
         GVOut <- array(0,dim = c(dim(out[[1]]$restartMod$GVout),length(sampleIDs)))
         reStartSoil <- array(0,dim = c(dim(out[[1]]$reStartSoil),length(sampleIDs)))
         for(ij in sampleIDs){
-          multiOut[,,,,,ij] <- out[[ij]]$restartMod$multiOut
-          GVOut[,,,ij] <- out[[ij]]$restartMod$GVout
-          reStartSoil[,,,,,ij] <- out[[ij]]$reStartSoil
+          if(length(dim(multiOut))==5){
+            multiOut[,,,,ij] <- out[[ij]]$restartMod$multiOut
+            GVOut[,,,ij] <- out[[ij]]$restartMod$GVout
+            reStartSoil[,,,,ij] <- out[[ij]]$reStartSoil
+          } else {
+            multiOut[,,,,,ij] <- out[[ij]]$restartMod$multiOut
+            GVOut[,,,ij] <- out[[ij]]$restartMod$GVout
+            reStartSoil[,,,,,ij] <- out[[ij]]$reStartSoil
+          }
         }
         multiOut <- apply(multiOut,1:(length(dim(multiOut))-1),mean)
         dimnames(multiOut) <- dimnames(out[[1]]$restartMod$multiOut)
@@ -284,12 +294,20 @@ runPerHarvScen <- function(harvSceni){
 }
 ###########
 
-runOut <- lapply(harvScens[1], function(jx) {
-  runPerHarvScen(jx)})
+for(ij in 1:nrow(speciess)){
+  species <<- speciess[ij,]
+  runOut <- lapply(harvScens[1], function(jx) {
+    runPerHarvScen(jx)})
+  if(testaus){
+    runOut <- lapply(harvScens[-1], function(jx) {
+      runPerHarvScen(jx)})
+  } else {
+    runOut <- mclapply(harvScens[-1], function(jx) {
+      runPerHarvScen(jx)
+    }, mc.cores = 5, mc.silent=FALSE)      
+  }      
+}
   
-runOut <- mclapply(harvScens[-1], function(jx) {
-  runPerHarvScen(jx)
-}, mc.cores = 5, mc.silent=FALSE)      
 
 
 ###########

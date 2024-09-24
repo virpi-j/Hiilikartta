@@ -42,8 +42,13 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
     print(paste("Load age",initAge,"initial data."))
     load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_startStates",r_no,"_fert",ferti,".rdata"))
     initGVOutSegs <- reStartMod$GVOut[,tSegs,]
-    initmultiOutSegs <- reStartMod$multiOut[,tSegs,,,]
-    initSoilCSegs <- reStartSoil[,tSegs,,,]
+    if(length(dim(reStartMod$multiOut))==4){
+      initmultiOutSegs <- reStartMod$multiOut[,tSegs,,]
+      initSoilCSegs <- reStartSoil[,tSegs,,]
+    } else {
+      initmultiOutSegs <- reStartMod$multiOut[,tSegs,,,]
+      initSoilCSegs <- reStartSoil[,tSegs,,,]
+    }
   }
     
   if(is.null(sampleX)){
@@ -216,16 +221,16 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
                                            harv=harvScen, HcFactorX=HcFactor, 
                                            climScen=climScen, sampleX=sampleX, P0currclim=P0currclim, fT0=fT0)
   
-  #if(outType %in% c("uncRun","uncSeg")){
-  #  initPrebas$pPRELES <- pPRELES
-  #  initPrebas$pYASSO <- pYAS
-  #  initPrebas$pCROBAS<-pCrobasX
-  #}
   if(!is.na(initAge)){
     print(paste0("update initial stages for age ",initAge))
     initPrebas$GVout[1:nSitesRun0,1,] <- initGVOutSegs    
-    initPrebas$multiOut[1:nSitesRun0,1,,,] <- initmultiOutSegs
-    initPrebas$multiInitVar[1:nSitesRun0,,] <- initmultiOutSegs[,c("species","age","H","D","BA","Hc_base","Ac"),,1]
+    if(length(dim(initmultiOutSegs))==3){
+      initPrebas$multiOut[1:nSitesRun0,1,,1,] <- initmultiOutSegs
+      initPrebas$multiInitVar[1:nSitesRun0,,] <- initmultiOutSegs[,c("species","age","H","D","BA","Hc_base","Ac"),1]
+    } else {    
+      initPrebas$multiOut[1:nSitesRun0,1,,,] <- initmultiOutSegs
+      initPrebas$multiInitVar[1:nSitesRun0,,] <- initmultiOutSegs[,c("species","age","H","D","BA","Hc_base","Ac"),,1]
+    }
   }
   #print(initPrebas$multiInitVar[1,"age",])
   #print(initPrebas$multiInitVar[1,"D",])
@@ -384,7 +389,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   nx <- dim(initSoilC)[3]
   layers <- dim(initPrebas$soilC)[5]
   #if(!is.null(initSoilC)) initPrebas$soilC[,1,,,1:nx] <- initSoilC
-  if(!is.null(initSoilC)) initPrebas$soilC[,1,,,1:layers] <- initSoilC[,,,1:layers]
+  if(!is.null(initSoilC)) initPrebas$soilC[,1,,,1:layers] <- initSoilC[1:nrow(sampleX),,,1:layers]
   
   print(paste0("harvest scenario ", harvScen))
   print(paste0("harvest intensity ", harvInten))
@@ -492,20 +497,13 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   if(harvScen=="Base" & harvInten =="Base" & initilizeSoil & rcps=="CurrClim"){
     initSoilC <- stXX_GV(region, 1)
     print(paste("initSoilC"))
-    #if(outType!="testRun" | forceSaveInitSoil){
-    #  if(RCP==0){#if(!outType %in% c("uncRun","uncSeg")){
-    #  if(identical(landClassX,1:3)) save(initSoilC,file=paste0("initSoilC/forCent",r_no,"/initSoilC_",sampleID,"_LandClass1to3.rdata"))
-    #  if(identical(landClassX,1:2)) save(initSoilC,file=paste0("initSoilC/forCent",r_no,"/initSoilC_",sampleID,"_LandClass1to2.rdata"))
-    #  if(identical(landClassX,1)) save(initSoilC,file=paste0("initSoilC/forCent",r_no,"/initSoilC_",sampleID,"_LandClass1.rdata"))
-    #} else if(uncRCP == 0 & outType!="uncSeg") {
     save(initSoilC,file=paste0("initSoilCunc/forCent",r_no,"/initSoilC.rdata"))
     print(paste0("initsoil saved"))
-    # }
-    #}
+    
     ###run yasso (starting from steady state) using PREBAS litter
     # region <- yassoPREBASin(region,initSoilC)
     initPrebas$yassoRun <- rep(1,initPrebas$nSites)
-    initPrebas$soilC[,1,,,] <- initSoilC
+    initPrebas$soilC[,1,,,] <- initSoilC[1:nrow(sampleX),,,]
     if (is.na(minDharvX)) {
       region <- funPreb(initPrebas, HarvLim = as.numeric(HarvLimX),
                         cutAreas =cutArX,compHarv=compHarvX,
@@ -551,18 +549,20 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   #####start initialize deadWood volume
   ## identify managed and unmanaged forests
   manFor <-  which(sampleX$oldCons==0)
-  manFor <- check_management_vector(management_vector = manFor)
+  #print(manFor)
+  if(length(manFor)>1 & !is.na(manFor[1])){
+    manFor <- check_management_vector(management_vector = manFor)
+  }
   unmanFor <- which(sampleX$oldCons==1)
-  unmanFor <- check_management_vector(management_vector = unmanFor, cons = 1)
-  
+  if(length(unmanFor)>1 & !is.na(unmanFor[1])){
+    unmanFor <- check_management_vector(management_vector = unmanFor, cons = 1)
+  }
   if(outType=="ststDeadW" | (harvScen=="Base" & harvInten =="Base" & initilizeSoil & rcps=="CurrClim")){
     if(!exists("yearsDeadW")) yearsDeadW <- 1:nYears
-        unmanDeadW <- initDeadW(region,unmanFor,yearsDeadW)
+    unmanDeadW <- initDeadW(region,unmanFor,yearsDeadW)
     manDeadW <- initDeadW(region,manFor,yearsDeadW)
     save(unmanDeadW,manDeadW,file=paste0("initSoilCunc/forCent",r_no,"/deadWV_mortMod",mortMod,".rdata"))
-    #save(unmanDeadW,manDeadW,file=paste0("initDeadWVss/reg",
-    #                                     r_no,"_deadWV_mortMod",mortMod,".rdata"))
-    return("deadWood volume at steady state saved")
+    print("deadWood volume at steady state saved")
   } else {
     if(HSIruns){
       ###start. additional line to average the deadwood volume over the 3 regions used in Ismael runs
@@ -584,17 +584,24 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
       #            r_no,"_deadWV_mortMod",mortMod,".rdata"))
     }
     if(nrow(unmanDeadW$ssDeadW)<nYears){
-      tmp<-unmanDeadW$ssDeadW
-      tmp<-rbind(tmp,matrix(tmp[nrow(tmp),],ncol=ncol(tmp),nrow=nYears-nrow(tmp),byrow = T))
-      unmanDeadW$ssDeadW<-tmp
-      tmp<-manDeadW$ssDeadW
-      tmp<-rbind(tmp,matrix(tmp[nrow(tmp),],ncol=ncol(tmp),nrow=nYears-nrow(tmp),byrow = T))
-      manDeadW$ssDeadW<-tmp
+      if(length(unmanFor)>1 & !is.na(unmanFor[1])){
+        tmp<-unmanDeadW$ssDeadW
+        tmp<-rbind(tmp,matrix(tmp[nrow(tmp),],ncol=ncol(tmp),nrow=nYears-nrow(tmp),byrow = T))
+        unmanDeadW$ssDeadW<-tmp
+      }
+      if(length(manFor)>1 & !is.na(manFor[1])){
+        tmp<-manDeadW$ssDeadW
+        tmp<-rbind(tmp,matrix(tmp[nrow(tmp),],ncol=ncol(tmp),nrow=nYears-nrow(tmp),byrow = T))
+        manDeadW$ssDeadW<-tmp
+      }
     } 
     
-    region <- management_to_region_multiOut(region = region, management_vector = manFor, deadW = manDeadW, nYears = nYears)
-    region <- management_to_region_multiOut(region = region, management_vector = unmanFor, deadW = unmanDeadW, nYears = nYears)
-    
+    if(length(manFor)>1 & !is.na(manFor[1])){
+      region <- management_to_region_multiOut(region = region, management_vector = manFor, deadW = manDeadW, nYears = nYears)
+    }
+    if(length(unmanFor)>1 & !is.na(unmanFor[1])){
+      region <- management_to_region_multiOut(region = region, management_vector = unmanFor, deadW = unmanDeadW, nYears = nYears)
+    }
   }
   ####end initialize deadWood Volume
   
@@ -631,7 +638,11 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
     
     V <- apply(region$multiOut[1:nSitesRun0,,"V",,1],1:2,"sum")
     #print(V[1,1:10])
-    ageCols <- which(colMeans(region$multiOut[1:nSitesRun0,nYears,"age",,1])>0)
+    agesEnd <- region$multiOut[1:nSitesRun0,nYears,"age",,1]
+    ageCols <- 1
+    if(!is.null(dim(agesEnd))){
+      ageCols <- which(colMeans(agesEnd)>0)
+    }
     age <- apply(region$multiOut[1:nSitesRun0,,"age",ageCols,1],1:2,"mean")
     nep <- apply(region$multiOut[1:nSitesRun0,,"NEP/SMI[layer_1]",,1],1:2,"sum")
     wTot <- apply(region$multiOut[1:nSitesRun0,,c(24,25,31,32,33),,1],1:2,"sum")
@@ -1097,7 +1108,7 @@ create_prebas_input.f = function(r_no, clim, data.sample, nYears,
     if(!is.null(outModReStart$siteInfo)) initPrebas$siteInfo <- outModReStart$siteInfo
     if(!is.null(outModReStart$initClearcut)) initPrebas$initClearcut <- outModReStart$initClearcut
   }
-  if(!is.null(initSoilC)) initPrebas$soilC[,1:reStartYear,,,1:3] <- initSoilC
+  if(!is.null(initSoilC)) initPrebas$soilC[,1:reStartYear,,,1:3] <- initSoilC[1:nrow(sampleX),,,,]
   
   return(initPrebas)
 }
