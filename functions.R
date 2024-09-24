@@ -41,6 +41,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
     tSegs <- which(initAge==yearsToMem)
     print(paste("Load age",initAge,"initial data."))
     load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_startStates",r_no,"_fert",ferti,".rdata"))
+    print(paste("Load file",paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_startStates",r_no,"_fert",ferti,".rdata")))
     initGVOutSegs <- reStartMod$GVOut[,tSegs,]
     if(length(dim(reStartMod$multiOut))==4){
       initmultiOutSegs <- reStartMod$multiOut[,tSegs,,]

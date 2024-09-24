@@ -136,6 +136,7 @@ runPerHarvScen <- function(harvSceni, dataS=dataSorig){
   if(harvSceni%in%c("NoHarv","baseTapio")) n0only <- T
   print(paste("Species",which(species>0),"run..."))
   for(ferti in 1:fertmax){
+    ferti <<- ferti # make global
     print(paste(harvScen,"/",harvInten,"/ fert =",ferti))
     time0 <- Sys.time()
     outputAgei <-list()
