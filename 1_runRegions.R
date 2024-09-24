@@ -5,10 +5,11 @@ if(length(dev.list())>0) dev.off()
 toFile <- F
 set.seed(1)
 setwd("~/HiilikarttaGH/")
+source("/scratch/project_2000994/PREBASruns/PREBAStesting/localSettins.R",local=T)
+
 nSitesRun <-10000
 nSitesRun0 <- 50
 fertmax <- 6 # max fert type
-testaus <- T
 if(testaus){
   nSitesRun <-500
   fertmax <- 2 # max fert type
@@ -16,7 +17,6 @@ if(testaus){
 }
 CSCrun <- T
 vPREBAS <- "newVersion"
-source("/scratch/project_2000994/PREBASruns/PREBAStesting/localSettins.R",local=T)
 #r_no <- 4
 path_wrkdir  <- "/scratch/project_2000994/PREBASruns/finRuns/"
 path_initiSoilC <- "/scratch/project_2000994/PREBASruns/finRuns/"
