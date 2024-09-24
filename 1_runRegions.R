@@ -111,7 +111,7 @@ speciess <- array(0,c(5,4),dimnames = list(paste0("iter",1:nsets),c("pine","spru
 speciess[1,] <- c(100,0,0,0)
 speciess[2,] <- c(0,100,0,0) # pine, spruce, birch, deciduous
 speciess[3,] <- c(0,0,100,0)
-speciess[4,] <- c(0,0,0,100)
+speciess[4,] <- c(0,50,50,0)
 speciess[5,] <- c(50,0,0,50)
 
 harvSceni <- "NoHarv"
