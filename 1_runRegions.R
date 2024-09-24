@@ -298,7 +298,7 @@ for(ij in 1:nrow(speciess)){
   species <<- speciess[ij,]
   runOut <- lapply(harvScens[1], function(jx) {
     runPerHarvScen(jx)})
-  if(testaus){
+  if(!parRuns){
     runOut <- lapply(harvScens[-1], function(jx) {
       runPerHarvScen(jx)})
   } else {
