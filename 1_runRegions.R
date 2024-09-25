@@ -1,7 +1,7 @@
 #rm(list=ls())
 #gc()
 if(length(dev.list())>0) dev.off()
-
+print(paste("region",r_no))
 toFile <- F
 set.seed(1)
 setwd("~/HiilikarttaGH/")
