@@ -1,11 +1,11 @@
-rm(list=ls())
-gc()
+#rm(list=ls())
+#gc()
 if(length(dev.list())>0) dev.off()
 
 toFile <- F
 set.seed(1)
 setwd("~/HiilikarttaGH/")
-source("/scratch/project_2000994/PREBASruns/PREBAStesting/localSettins.R",local=T)
+#source("/scratch/project_2000994/PREBASruns/PREBAStesting/localSettins.R",local=T)
 
 nSitesRun <-10000
 nSitesRun0 <- 50
@@ -107,12 +107,13 @@ endingYear = 2100
 nYears = endingYear-startingYear
 
 nsets <- 5
-speciess <- array(0,c(5,4),dimnames = list(paste0("iter",1:nsets),c("pine","spruce","birch","decid")))
+speciess <- array(0,c(nsets,4),dimnames = list(paste0("iter",1:nsets),c("pine","spruce","birch","decid")))
 speciess[1,] <- c(100,0,0,0)
 speciess[2,] <- c(0,100,0,0) # pine, spruce, birch, deciduous
 speciess[3,] <- c(0,0,100,0)
 speciess[4,] <- c(0,50,50,0)
 speciess[5,] <- c(50,0,50,0)
+speciesNames <- c("100sp1","100sp2","100sp3","50sp250sp3","50sp150sp3")
 
 harvSceni <- "NoHarv"
 harvScens <- c("NoHarv","Mitigation","BaseLow","adapt","baseTapio", "Base")
@@ -236,7 +237,7 @@ runPerHarvScen <- function(harvSceni, dataS=dataSorig){
   outFileePath <-"/scratch/project_2000994/PREBASruns/PREBAStesting/"
   #if(is.na(initAge)) initAge <- 0
   outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
-                     "_species",which(species>0),".pdf")
+                     "_species",speciesName,".pdf")
   pdf(outFilee)
   par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
   for(ij in 1:length(output[[1]][[1]])){
@@ -289,14 +290,15 @@ runPerHarvScen <- function(harvSceni, dataS=dataSorig){
   }
   dev.off()
   outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
-                     "_species",which(species>0),".rdata")
+                     "_species",speciesName,".rdata")
   save(output,file=outFilee)
   print(paste("Saved file",outFilee))
 }
 ###########
 
-for(ij in 1:nrow(speciess)){
+for(ij in 3:nrow(speciess)){
   species <<- speciess[ij,]
+  speciesName <<- speciesNames[ij]
   runOut <- lapply(harvScens[1], function(jx) {
     runPerHarvScen(jx)})
   if(!parRuns){
