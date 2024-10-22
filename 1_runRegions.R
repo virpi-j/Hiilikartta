@@ -141,6 +141,7 @@ runPerHarvScen <- function(harvSceni, dataS=dataSorig){
     print(paste(harvScen,"/",harvInten,"/ fert =",ferti))
     time0 <- Sys.time()
     outputAgei <-list()
+    initAgei <- 1
     for(initAgei in 1:length(c(NA,yearsToMem))){ # 50#NA
       initAge <- c(NA,yearsToMem)[initAgei]
       toMem <- ls()
@@ -209,7 +210,7 @@ runPerHarvScen <- function(harvSceni, dataS=dataSorig){
       }
       rm(list=setdiff(ls(),c(toMem,"out")))
       
-      V <- age <- nep <- wTot <- wGV <- soilC <- array(0,c(nSitesRun0,nYears,length(sampleIDs)),
+      V <- litters <- age <- nep <- wTot <- wGV <- soilC <- array(0,c(nSitesRun0,nYears,length(sampleIDs)),
                                                        dimnames = list(paste0("site",1:nSitesRun0),
                                                                        2014+1:nYears,
                                                                        climMod[sampleIDs]))
@@ -220,9 +221,10 @@ runPerHarvScen <- function(harvSceni, dataS=dataSorig){
         wTot[,,ij] <- out[[ij]]$wTot
         wGV[,,ij] <- out[[ij]]$wGV
         soilC[,,ij] <- out[[ij]]$soilC
+        litters[,,ij] <- out[[ij]]$litters
       }
-      outputAgei[[initAgei]] <- list(V, age, nep, wTot, wGV, soilC)
-      names(outputAgei[[initAgei]]) <- c("V", "age", "nep", "wTot", "wGV", "soilC")
+      outputAgei[[initAgei]] <- list(V, age, nep, wTot, wGV, soilC, litters)
+      names(outputAgei[[initAgei]]) <- c("V", "age", "nep", "wTot", "wGV", "soilC", "litters")
       print(Sys.time()-time0)
     }
     output[[ferti]] <- outputAgei
@@ -295,6 +297,7 @@ runPerHarvScen <- function(harvSceni, dataS=dataSorig){
   print(paste("Saved file",outFilee))
 }
 ###########
+ij <- 1
 
 for(ij in 3:nrow(speciess)){
   species <<- speciess[ij,]

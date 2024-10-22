@@ -649,6 +649,10 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
     wTot <- apply(region$multiOut[1:nSitesRun0,,c(24,25,31,32,33),,1],1:2,"sum")
     wGV <- region$GVout[1:nSitesRun0,,4]
     soilC <- region$multiOut[1:nSitesRun0,,"soilC",1,1]
+    litters <- apply(region$multiOut[1:nSitesRun0,,"Litter_cWoody",,1],1:2,"sum")+
+      apply(region$multiOut[1:nSitesRun0,,"Litter_fol",,1],1:2,"sum")+
+      apply(region$multiOut[1:nSitesRun0,,"Litter_fr",,1],1:2,"sum")+
+      apply(region$multiOut[1:nSitesRun0,,"Litter_fWoody",,1],1:2,"sum")
     
     if(harvScen=="NoHarv" & is.na(initAge)){
       print("Save init states for ages ");print(yearsToMem)
@@ -656,11 +660,11 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
       reStartMod$GVout <- region$GVout[1:nSitesRun0,yearsToMem,]
       reStartMod$multiOut <- region$multiOut[1:nSitesRun0,yearsToMem,,,]
       reStartSoil = region$soilC[1:nSitesRun0,yearsToMem,,,]
-      out <- list(V, age, nep, wTot, wGV, soilC,reStartMod,reStartSoil)
-      names(out) <- c("V", "age", "nep", "wTot", "wGV", "soilC","restartMod","reStartSoil")
+      out <- list(V, age, nep, wTot, wGV, soilC, litters, reStartMod,reStartSoil)
+      names(out) <- c("V", "age", "nep", "wTot", "wGV", "soilC", "litters","restartMod","reStartSoil")
     } else {
-      out <- list(V, age, nep, wTot, wGV, soilC)
-      names(out) <- c("V", "age", "nep", "wTot", "wGV","soilC")
+      out <- list(V, age, nep, wTot, wGV, soilC, litters)
+      names(out) <- c("V", "age", "nep", "wTot", "wGV","soilC", "litters")
     }
     
     return(out)
