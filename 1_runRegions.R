@@ -299,7 +299,7 @@ runPerHarvScen <- function(harvSceni, dataS=dataSorig){
 ###########
 ij <- 1
 
-for(ij in 3:nrow(speciess)){
+for(ij in 1:nrow(speciess)){
   species <<- speciess[ij,]
   speciesName <<- speciesNames[ij]
   runOut <- lapply(harvScens[1], function(jx) {
