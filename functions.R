@@ -11,7 +11,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
                      coefCH4 = 0.34,#g m-2 y-1
                      coefN20_1 = 0.23,coefN20_2 = 0.077,#g m-2 y-1
                      landClassUnman=NULL,compHarvX = 0,
-                     funPreb = regionPrebas,
+                     funPreb = regionPrebas, ingrowth = F,
                      initSoilCreStart=NULL,
                      outModReStart=NULL,reStartYear=1,
                      sampleX=NULL,P0currclim=NA, fT0=NA, initAge=NA){
@@ -219,7 +219,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   
   initPrebas = create_prebas_input_adapt.f(r_no, clim, data.sample, nYears = nYears,
                                            startingYear = startingYear,domSPrun=domSPrun,
-                                           harv=harvScen, HcFactorX=HcFactor, 
+                                           harv=harvScen, HcFactorX=HcFactor,ingrowth = ingrowth, 
                                            climScen=climScen, sampleX=sampleX, P0currclim=P0currclim, fT0=fT0)
   
   if(!is.na(initAge)){
@@ -382,7 +382,8 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
       print(paste0("initsoilID loaded"))
     }
     if(!is.na(initAge)){
-      initSoilC[1:nSitesRun0,,,] <- initSoilCSegs
+      nlayers <- min(dim(initSoilC)[4], dim(initSoilCSegs)[4])
+      initSoilC[1:nSitesRun0,,,1:nlayers] <- initSoilCSegs[,,,1:nlayers]
       
     }
   }
@@ -716,12 +717,15 @@ management_to_region_multiOut <- function(region, management_vector, deadW, nYea
   #print(layers)
   if(!any(is.na(management_vector))) {
     if(layers==3){
-    region$multiOut[management_vector,,8,1:3,1] <- region$multiOut[management_vector,,8,1:3,1] + 
-      aperm(replicate(length(management_vector),(deadW$ssDeadW[1:nYears,])),c(3,1:2))
+      region$multiOut[management_vector,,8,1:3,1] <- region$multiOut[management_vector,,8,1:3,1] + 
+        aperm(replicate(length(management_vector),(deadW$ssDeadW[1:nYears,])),c(3,1:2))
     } else {
       region$multiOut[management_vector,,8,1:layers,1] <- 
         region$multiOut[management_vector,,8,1:layers,1] + 
-        t(replicate(length(management_vector),(deadW$ssDeadW[1:nYears,1:layers])))
+        aperm(replicate(length(management_vector),(deadW$ssDeadW[1:nYears,1:layers])),c(3,1:2))
+#      region$multiOut[management_vector,,8,1:layers,1] <- 
+#        region$multiOut[management_vector,,8,1:layers,1] + 
+#        t(replicate(length(management_vector),(deadW$ssDeadW[1:nYears,1:layers])))
     }
     }
   return(region)
@@ -839,7 +843,7 @@ sample_data.f = function(data.all, nSample) {
 
 # StartingYear = climate data that detrermines simulation period must have year greater than this.
 create_prebas_input.f = function(r_no, clim, data.sample, nYears,
-                                 startingYear=0,domSPrun=0,
+                                 startingYear=0,domSPrun=0, ingrowth = F,
                                  harv, HcFactorX=HcFactor, reStartYear=1,
                                  outModReStart=NULL,initSoilC=NULL
 ) { 
@@ -1068,6 +1072,7 @@ create_prebas_input.f = function(r_no, clim, data.sample, nYears,
                                 energyCut = energyCut, 
                                 ftTapioPar = ftTapioParX,
                                 tTapioPar = tTapioParX,
+                                ingrowth = ingrowth,
                                 multiInitVar = as.array(initVar),
                                 PAR = clim$PAR[, 1:(nYears*365)],
                                 TAir=clim$TAir[, 1:(nYears*365)],
@@ -1087,6 +1092,7 @@ create_prebas_input.f = function(r_no, clim, data.sample, nYears,
                                 energyCut = energyCut, 
                                 ftTapioPar = ftTapioParX,
                                 tTapioPar = tTapioParX,
+                                ingrowth = ingrowth,
                                 multiInitVar = as.array(initVar),
                                 PAR = clim$PAR[, 1:(nYears*365)],
                                 TAir=clim$TAir[, 1:(nYears*365)],
@@ -2125,7 +2131,7 @@ outProcFun <- function(modOut,varSel,funX="baWmean"){
 
 create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
                                        startingYear=0,domSPrun=0,
-                                       harv, HcFactorX=HcFactor,climScen=climScen,
+                                       harv, HcFactorX=HcFactor,climScen=climScen, ingrowth=ingrowth,
                                        sampleX=sampleX, P0currclim=NA, fT0=NA) { # dat = climscendataset
   #domSPrun=0 initialize model for mixed forests according to data inputs 
   #domSPrun=1 initialize model only for dominant species 
@@ -2371,6 +2377,7 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
                                 energyCut = energyCut, 
                                 ftTapioPar = ftTapioParX,
                                 tTapioPar = tTapioParX,
+                                ingrowth = ingrowth,
                                 multiInitVar = as.array(initVar),
                                 PAR = clim$PAR[, 1:(nYears*365)],
                                 TAir=clim$TAir[, 1:(nYears*365)],
@@ -2391,6 +2398,7 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
                                 defaultThin = defaultThin,
                                 ClCut = ClCut, 
                                 areas =areas,
+                                ingrowth = ingrowth,
                                 energyCut = energyCut, 
                                 ftTapioPar = ftTapioParX,
                                 tTapioPar = tTapioParX,
