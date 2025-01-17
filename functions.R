@@ -719,15 +719,16 @@ management_to_region_multiOut <- function(region, management_vector, deadW, nYea
     if(layers==3){
       region$multiOut[management_vector,,8,1:3,1] <- region$multiOut[management_vector,,8,1:3,1] + 
         aperm(replicate(length(management_vector),(deadW$ssDeadW[1:nYears,])),c(3,1:2))
+    } else if(layers==1){
+      region$multiOut[management_vector,,8,1:layers,1] <- 
+        region$multiOut[management_vector,,8,1:layers,1] + 
+        t(replicate(length(management_vector),(deadW$ssDeadW[1:nYears,1:layers])))
     } else {
       region$multiOut[management_vector,,8,1:layers,1] <- 
         region$multiOut[management_vector,,8,1:layers,1] + 
         aperm(replicate(length(management_vector),(deadW$ssDeadW[1:nYears,1:layers])),c(3,1:2))
-#      region$multiOut[management_vector,,8,1:layers,1] <- 
-#        region$multiOut[management_vector,,8,1:layers,1] + 
-#        t(replicate(length(management_vector),(deadW$ssDeadW[1:nYears,1:layers])))
     }
-    }
+  }
   return(region)
 }
 
