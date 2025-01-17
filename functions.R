@@ -382,9 +382,10 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
       print(paste0("initsoilID loaded"))
     }
     if(!is.na(initAge)){
-      nlayers <- min(dim(initSoilC)[4], dim(initSoilCSegs)[4])
-      initSoilC[1:nSitesRun0,,,1:nlayers] <- initSoilCSegs[,,,1:nlayers]
-      
+      ns <- length(dim(initSoilCSegs))
+      nlayers <- min(dim(initSoilC)[4], dim(initSoilCSegs)[ns])
+      if(ns == 4) initSoilC[1:nSitesRun0,,,1:nlayers] <- initSoilCSegs[,,,1:nlayers]
+      if(ns == 3) initSoilC[1:nSitesRun0,,,1:nlayers] <- initSoilCSegs[,,1:nlayers]
     }
   }
   initPrebas$yassoRun <- rep(1,initPrebas$nSites)
