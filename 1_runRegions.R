@@ -116,11 +116,11 @@ nYears = endingYear-startingYear
 
 nsets <- 5
 speciess <- array(0,c(nsets,4),dimnames = list(paste0("iter",1:nsets),c("pine","spruce","birch","decid")))
-speciess[1,] <- c(100,0,0,0)
-speciess[2,] <- c(0,100,0,0) # pine, spruce, birch, deciduous
-speciess[3,] <- c(0,0,100,0)
-speciess[4,] <- c(0,50,50,0)
-speciess[5,] <- c(50,0,50,0)
+speciess[1,] <- c(98,1,1,0)
+speciess[2,] <- c(1,98,1,0) # pine, spruce, birch, deciduous
+speciess[3,] <- c(1,1,98,0)
+speciess[4,] <- c(2,49,49,0)
+speciess[5,] <- c(49,2,49,0)
 speciesNames <- c("100sp1","100sp2","100sp3","50sp250sp3","50sp150sp3")
 speciesNamesLong <- c("manty", "kuusi", "lehtipuu", "kuusi-lehtipuu","manty-lehtipuu")
 landclass0 <- 1 # landclass for sample0
