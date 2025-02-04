@@ -217,11 +217,16 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   
   HcFactor <- 1
   
+  #if(outType=="testRun"){
   initPrebas = create_prebas_input_adapt.f(r_no, clim, data.sample, nYears = nYears,
                                            startingYear = startingYear,domSPrun=domSPrun,
                                            harv=harvScen, HcFactorX=HcFactor,ingrowth = ingrowth, 
                                            climScen=climScen, sampleX=sampleX, P0currclim=P0currclim, fT0=fT0)
-  
+
+  #save(initPrebas,file=paste0("Hiilikartta_initPrebas_rno",r_no,".rdata")) 
+  #} else {
+  #  load(paste0("Hiilikartta_initPrebas_rno",r_no,".rdata"))
+  #}
   if(!is.na(initAge)){
     print(paste0("update initial stages for age ",initAge))
     initPrebas$GVout[1:nSitesRun0,1,] <- initGVOutSegs    
@@ -390,7 +395,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   }
   initPrebas$yassoRun <- rep(1,initPrebas$nSites)
   nx <- dim(initSoilC)[3]
-  layers <- dim(initPrebas$soilC)[5]
+  layers <- min(dim(initPrebas$soilC)[5], dim(initSoilC)[4])
   #if(!is.null(initSoilC)) initPrebas$soilC[,1,,,1:nx] <- initSoilC
   if(!is.null(initSoilC)) initPrebas$soilC[,1,,,1:layers] <- initSoilC[1:nrow(sampleX),,,1:layers]
   
@@ -655,6 +660,11 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
       apply(region$multiOut[1:nSitesRun0,,"Litter_fol",,1],1:2,"sum")+
       apply(region$multiOut[1:nSitesRun0,,"Litter_fr",,1],1:2,"sum")+
       apply(region$multiOut[1:nSitesRun0,,"Litter_fWoody",,1],1:2,"sum")
+    #print(vSpFun(region,SpID=1)[,-1][1:3,1:8])
+    Vpine <- as.matrix((vSpFun(region,SpID=1)[,-1]))   
+    #print(Vpine[1:3,1:8])
+    Vspruce <- as.matrix((vSpFun(region,SpID=2)[,-1]))    
+    Vbirch <- as.matrix((vSpFun(region,SpID=3)[,-1]))    
     
     if(harvScen=="NoHarv" & is.na(initAge)){
       print("Save init states for ages ");print(yearsToMem)
@@ -662,11 +672,11 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
       reStartMod$GVout <- region$GVout[1:nSitesRun0,yearsToMem,]
       reStartMod$multiOut <- region$multiOut[1:nSitesRun0,yearsToMem,,,]
       reStartSoil = region$soilC[1:nSitesRun0,yearsToMem,,,]
-      out <- list(V, age, nep, wTot, wGV, soilC, litters, reStartMod,reStartSoil)
-      names(out) <- c("V", "age", "nep", "wTot", "wGV", "soilC", "litters","restartMod","reStartSoil")
+      out <- list(V, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, reStartMod,reStartSoil)
+      names(out) <- c("V", "age", "nep", "wTot", "wGV", "soilC", "litters","Vpine", "Vspruce", "Vbirch","restartMod","reStartSoil")
     } else {
-      out <- list(V, age, nep, wTot, wGV, soilC, litters)
-      names(out) <- c("V", "age", "nep", "wTot", "wGV","soilC", "litters")
+      out <- list(V, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch)
+      names(out) <- c("V", "age", "nep", "wTot", "wGV","soilC", "litters","Vpine", "Vspruce", "Vbirch")
     }
     
     return(out)
@@ -714,8 +724,7 @@ check_management_vector <- function(management_vector, cons=0) {
 #'
 #' @examples
 management_to_region_multiOut <- function(region, management_vector, deadW, nYears) {
-  layers <- dim(region$multiOut)[4]
-  #print(layers)
+  layers <- min(dim(region$multiOut)[4],dim(deadW$ssDeadW)[2])
   if(!any(is.na(management_vector))) {
     if(layers==3){
       region$multiOut[management_vector,,8,1:3,1] <- region$multiOut[management_vector,,8,1:3,1] + 
