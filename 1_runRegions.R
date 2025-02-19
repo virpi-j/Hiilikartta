@@ -8,10 +8,11 @@ setwd("~/HiilikarttaGH/")
 #source("/scratch/project_2000994/PREBASruns/PREBAStesting/localSettins.R",local=T)
 
 nSitesRun <-10000
-nSitesRun0 <- 50
+nSitesRun0 <- 100
 fertmax <- 5 # max fert type
 if(testaus){
-  nSitesRun <-500
+  nSitesRun <-100
+  nSitesRun0 <- 10
   fertmax <- 2 # max fert type
   yearsToMem <- c(30,50)
 }
@@ -88,7 +89,7 @@ source("~/HiilikarttaGH/functions.R", local = T)
 outType <- "testRun"
 harvScen <- "Base"
 harvInten <- "Base"
-manualRun <- F
+manualRun <- T
 if(manualRun){
   RCP=0
   harvScen <- "Base"
@@ -172,6 +173,7 @@ harvScens <- c("NoHarv","Mitigation","BaseLow","adapt","baseTapio", "Base")
 harvScens <- c("NoHarv","baseTapio")
 ferti <- 1
 speciesSeti <- 1
+speciesName <- speciesNames[speciesSeti]
 runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
   if(harvSceni=="Base"){ 
     harvInten <- "Base"
@@ -233,16 +235,12 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         out <- lapply(sampleIDs, function(jx) {
           runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
                    RCP = climScen, initAge = initAge)})
-      } else {
-        out <- lapply(sampleIDs, function(jx) {
-          runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", ingrowth = ingrowth, 
-                   RCP = climScen, initAge = initAge)})
         #} else {
         #  out <- mclapply(sampleIDs, function(jx) {
         #    runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = outType, RCP = climScen, initAge = initAge)
         #  }, mc.cores = nCores,mc.silent=FALSE)      
         #}
-        if(harvSceni=="NoHarv" & is.na(initAge)){
+        if(harvSceni=="NoHarv" & initAgei==0){ # is.na(initAge)){
           multiOut <- array(0,dim = c(dim(out[[1]]$restartMod$multiOut),length(sampleIDs)))
           GVOut <- array(0,dim = c(dim(out[[1]]$restartMod$GVout),length(sampleIDs)))
           reStartSoil <- array(0,dim = c(dim(out[[1]]$reStartSoil),length(sampleIDs)))
@@ -270,7 +268,13 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
                file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_startStates",r_no,"_fert",ferti,".rdata"))
           
         }
+      #}
+      } else {
+        out <- lapply(sampleIDs, function(jx) {
+          runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", ingrowth = ingrowth, 
+                   RCP = climScen, initAge = initAge)})
       }
+      
       rm(list=setdiff(ls(),c(toMem,"out")))
       
       if(initAgei>0){
@@ -314,8 +318,8 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
   outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
                      "_species",speciesName,".pdf")
   pdf(outFilee)
-  par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
   for(ij in 1:length(output[[1]][[1]])){
+    par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
     ymax <- max(output[[1]][[1]][[ij]])
     ymin <- min(output[[1]][[1]][[ij]])
     for(ferti in 1:fertmax){
@@ -325,7 +329,9 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
       }
     }
     ylims <- c(ymin,ymax)
-    
+   
+    ageplot <- F
+    if(ageplot){
     for(agei in 1:length(c(0,yearsToMem))){
       for(ferti in 1:fertmax){
         if(names(output[[ferti]][[agei]])[ij]!="age"){
@@ -346,6 +352,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         }
       }
     }
+      }
     for(agei in 1:length(c(0,yearsToMem))){
       for(ferti in 1:fertmax){
         tmp <- output[[ferti]][[agei]][[ij]]
