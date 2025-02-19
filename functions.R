@@ -216,7 +216,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   Region = nfiareas[ID==r_no, Region]
   
   HcFactor <- 1
-  
+  print(paste("Ingrowth =",ingrowth))
   #if(outType=="testRun"){
   initPrebas = create_prebas_input_adapt.f(r_no, clim, data.sample, nYears = nYears,
                                            startingYear = startingYear,domSPrun=domSPrun,
@@ -229,13 +229,14 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   #}
   if(!is.na(initAge)){
     print(paste0("update initial stages for age ",initAge))
-    initPrebas$GVout[1:nSitesRun0,1,] <- initGVOutSegs    
+    initPrebas$GVout[1:nSitesRun0,1,] <- initGVOutSegs
     if(length(dim(initmultiOutSegs))==3){
       initPrebas$multiOut[1:nSitesRun0,1,,1,] <- initmultiOutSegs
       initPrebas$multiInitVar[1:nSitesRun0,,] <- initmultiOutSegs[,c("species","age","H","D","BA","Hc_base","Ac"),1]
     } else {    
-      initPrebas$multiOut[1:nSitesRun0,1,,,] <- initmultiOutSegs
-      initPrebas$multiInitVar[1:nSitesRun0,,] <- initmultiOutSegs[,c("species","age","H","D","BA","Hc_base","Ac"),,1]
+      nlayers <- min(dim(initPrebas$multiOut[1:nSitesRun0,1,,,])[3],dim(initmultiOutSegs)[3])
+      initPrebas$multiOut[1:nSitesRun0,1,,1:nlayers,] <- initmultiOutSegs[,,1:nlayers,]
+      initPrebas$multiInitVar[1:nSitesRun0,,1:nlayers] <- initmultiOutSegs[,c("species","age","H","D","BA","Hc_base","Ac"),1:nlayers,1]
     }
   }
   #print(initPrebas$multiInitVar[1,"age",])
@@ -489,7 +490,11 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
                           cutAreas =cutArX,compHarv=compHarvX,
                           startSimYear=reStartYear)
       } else {
-        region <- funPreb(initPrebas, HarvLim = as.numeric(HarvLimX),
+        print("save regionPrebas input")
+        save(initPrebas, HarvLimX, minDharvX,cutArX,compHarvX,
+             file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/testRunHiilikartta.rdata"))
+        print("start regionPrebas...")
+        region <- regionPrebas(initPrebas, HarvLim = as.numeric(HarvLimX),
                           minDharv = minDharvX,cutAreas =cutArX,
                           compHarv=compHarvX,
                           startSimYear=reStartYear)
@@ -666,7 +671,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
     Vspruce <- as.matrix((vSpFun(region,SpID=2)[,-1]))    
     Vbirch <- as.matrix((vSpFun(region,SpID=3)[,-1]))    
     
-    if(harvScen=="NoHarv" & is.na(initAge)){
+    if(harvScen=="NoHarv" & is.na(initAge) & !ingrowth){
       print("Save init states for ages ");print(yearsToMem)
       reStartMod <- list()
       reStartMod$GVout <- region$GVout[1:nSitesRun0,yearsToMem,]
@@ -808,26 +813,40 @@ runModOut <- function(sampleID, sampleX,modOut,r_no,harvScen,harvInten,rcpfile,a
 
 
 
-sample_data.f = function(data.all, nSample) {
-  cloudpixels = data.all[, sum(ba==32766)]
-  nonforest = data.all[, sum(ba==32767)]
-  forest = data.all[, sum(ba< 32766)]
+sample_data.f = function(sampleX, nSample) {
+  cloudpixels = sampleX[, sum(ba==32766)]
+  nonforest = sampleX[, sum(ba==32767)]
+  forest = sampleX[, sum(ba< 32766)]
   AREA = (forest + cloudpixels) * 16 * 16 * 1000 #m2
   AREA_1000ha = AREA / 10000 / 1000
   
   ## REMOVE CLOUD COVERED, AND WHERE cons = NA (...? why)
-  data.all = data.all[ba < 32766]
-  data.all = data.all[!is.na(cons)]
+  sampleX = sampleX[ba < 32766]
+  sampleX = sampleX[!is.na(cons)]
   
   ## REDUCE SAMPLE FOR TESTING ---------------------------------------
-  smp = floor(seq(1, dim(data.all)[1], len=nSample))
-  data.sample = data.all[smp]
+  smp = floor(seq(1, dim(sampleX)[1], len=nSample))
+  data.sample = sampleX[smp,]
   
   # summary(data.sample[, 3:11])
   
-  for (col in colnames(data.sample)[c(3, 5:11)]) set(data.sample, j=col,
-#  for (col in colnames(data.sample)[c(3, 5:12,14)]) set(data.sample, j=col,
-                                                     value=as.double(data.sample[[col]]))
+#  for (col in colnames(data.sample)[c(3, 5:11)]) set(data.sample, j=col,
+##  for (col in colnames(data.sample)[c(3, 5:12,14)]) set(data.sample, j=col,
+ #                                                    value=as.double(data.sample[[col]]))
+  
+  colnams <- c("regID",  "N",      "ba",     "age",    "dbh",    "pine",   "spruce", "birch" )
+  #for (col in colnames(data.sample)[c(3, 5:11)]){ 
+  #print(colnames(data.sample))
+  #print(colnames(data.sample)[match(colnams, colnames(sampleX))])
+  for (col in colnames(data.sample)[match(colnams, colnames(sampleX))]){ 
+    #print(col)
+    set(data.sample, j=col, value=as.double(data.sample[[col]]))
+  }  
+  if("y"%in%colnames(data.sample))set(data.sample, j="y", value=as.double(data.sample[[col]]))
+  if("x"%in%colnames(data.sample))set(data.sample, j="x", value=as.double(data.sample[[col]]))
+  if("lat"%in%colnames(data.sample))set(data.sample, j="lat", value=as.double(data.sample[[col]]))
+  if("h"%in%colnames(data.sample))set(data.sample, j="h", value=as.double(data.sample[[col]]))
+  if("decid"%in%colnames(data.sample))set(data.sample, j="decid", value=as.double(data.sample[[col]]))
   
   ## -----------------------------------------------------------------
   
