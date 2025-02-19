@@ -313,7 +313,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
   }
   names(output) <- paste0("fert",1:fertmax)
   
-  outFileePath <-"/scratch/project_2000994/PREBASruns/PREBAStesting/HiilikarttaResults"
+  outFileePath <-"/scratch/project_2000994/PREBASruns/PREBAStesting/HiilikarttaResults/"
   #if(is.na(initAge)) initAge <- 0
   outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
                      "_species",speciesName,".pdf")
