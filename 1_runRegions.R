@@ -170,8 +170,8 @@ soiltype0 <- 1 # soiltypes (mineral soils, spruce mire, pine mire, ombrotrophic 
 
 harvSceni <- "NoHarv"
 harvScens <- c("NoHarv","Mitigation","BaseLow","adapt","baseTapio", "Base")
-#harvScens <- c("NoHarv","baseTapio")
-harvScens <- c("baseTapio","NoHarv")
+harvScens <- c("NoHarv","baseTapio")
+#harvScens <- c("baseTapio","NoHarv")
 ferti <- 1
 speciesSeti <- 1
 speciesName <- speciesNames[speciesSeti]
