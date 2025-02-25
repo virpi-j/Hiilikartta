@@ -241,7 +241,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         #    runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = outType, RCP = climScen, initAge = initAge)
         #  }, mc.cores = nCores,mc.silent=FALSE)      
         #}
-        if(harvSceni=="NoHarv" & initAgei==0){ # is.na(initAge)){
+        if(harvSceni==harvScens[1] & initAgei==0){ # is.na(initAge)){
           multiOut <- array(0,dim = c(dim(out[[1]]$restartMod$multiOut),length(sampleIDs)))
           GVOut <- array(0,dim = c(dim(out[[1]]$restartMod$GVout),length(sampleIDs)))
           reStartSoil <- array(0,dim = c(dim(out[[1]]$reStartSoil),length(sampleIDs)))
