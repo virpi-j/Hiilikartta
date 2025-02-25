@@ -208,7 +208,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
       if(CoeffSim){
         simInitData <- data.table(ba = 0.01, age = 0, dbh = 0.01, pine = 1, 
                                   spruce =  1, birch =  1, #decid =  species[4], 
-                                  fert = ferti, h = 0.01, minpeat = minpeat0,
+                                  fert = ferti, h = 1.35, minpeat = minpeat0,
                                   landclass = landclass0, cons = 0)
         dataS$ba[1:nSitesRun0] <- simInitData$ba
         dataS$age[1:nSitesRun0] <- simInitData$age
