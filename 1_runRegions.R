@@ -7,8 +7,8 @@ set.seed(1)
 setwd("~/HiilikarttaGH/")
 #source("/scratch/project_2000994/PREBASruns/PREBAStesting/localSettins.R",local=T)
 
-nSitesRun <-10000
-nSitesRun0 <- 100
+nSitesRun <-100#00
+nSitesRun0 <- 10#0
 fertmax <- 5 # max fert type
 if(testaus){
   nSitesRun <-100
