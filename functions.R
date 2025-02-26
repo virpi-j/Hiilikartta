@@ -4,7 +4,7 @@
 ## ---------------------------------------------------------------------
 ## MAIN SCRIPT: uncRun for random segments, uncSeg for random values for segments
 ## ---------------------------------------------------------------------
-runModel <- function(sampleID, outType="dTabs", RCP=0,
+runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
                      harvScen,harvInten,easyInit=FALSE,
                      forceSaveInitSoil=F, cons10run = F,
                      procDrPeat=F,coeffPeat1=-240,coeffPeat2=70,
@@ -13,7 +13,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
                      landClassUnman=NULL,compHarvX = 0,
                      funPreb = regionPrebas, ingrowth = F,
                      initSoilCreStart=NULL,
-                     outModReStart=NULL,reStartYear=1,
+                     outModReStart=NULL,reStartYear=1,climdata=NULL,
                      sampleX=NULL,P0currclim=NA, fT0=NA, initAge=NA){
   # outType determines the type of output:
   # dTabs -> standard run, mod outputs saved as data.tables 
@@ -172,6 +172,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
   i = 0
   rcpfile = rcps
   load(paste(climatepath, rcpfile,".rdata", sep=""))  
+  if(is.null(climdata)){
   if(rcpfile=="CurrClim"){
     #####process data considering only current climate###
     # dat <- dat[rday %in% 1:10958] #uncomment to select some years (10958 needs to be modified)
@@ -205,14 +206,15 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
     }
   }
   gc()
+  }
   ## Prepare the same initial state for all harvest scenarios that are simulated in a loop below
   data.sample <- sample_data.f(sampleX, nSample)
   if(rcpfile=="CurrClim") data.sample$id <- data.sample$CurrClimID
   areas <- data.sample$area
   totAreaSample <- sum(data.sample$area)
   print(paste("Simulate for ",nYears,"years."))
-  clim = prep.climate.f(dat, data.sample, startingYear, nYears)
-  
+  if(is.null(climdata)) clim = prep.climate.f(dat, data.sample, startingYear, nYears)
+  if(!is.null(climdata)) clim <- climdata
   Region = nfiareas[ID==r_no, Region]
   
   HcFactor <- 1
@@ -646,7 +648,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0,
     rm(list=bioIndNames); gc()
   }  
   
-  if(outType=="testRun") return(list(region = region,initPrebas=initPrebas))
+  if(outType=="testRun") return(list(region = region,initPrebas=initPrebas, clim=clim))
   if(outType=="hiiliKartta"){
     
     V <- apply(region$multiOut[1:nSitesRun0,,"V",,1],1:2,"sum")

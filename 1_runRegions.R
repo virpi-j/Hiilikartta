@@ -13,8 +13,8 @@ fertmax <- 5 # max fert type
 if(testaus){
   nSitesRun <-100
   nSitesRun0 <- 10
-  fertmax <- 2 # max fert type
-  yearsToMem <- c(30,50)
+  fertmax <- 5 # max fert type
+  yearsToMem <- c(30)#,50)
 }
 CSCrun <- T
 #vPREBAS <- "newVersion"
@@ -105,7 +105,8 @@ if(manualRun){
 
 # initialize 
 print(paste("Run initialization for region",r_no,", sample size",nSitesRun))
-out <- runModel(1,harvScen="Base",harvInten="Base",outType = outType)
+out <- runModel(1,harvScen="Base",harvInten="Base",rcps="CurrClim",RCP=0, outType = outType)
+clim <- out$clim
 
 CoeffSim <- T
 ferti <- 1
