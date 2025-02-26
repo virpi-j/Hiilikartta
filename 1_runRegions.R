@@ -14,7 +14,7 @@ if(testaus){
   nSitesRun <-100
   nSitesRun0 <- 10
   fertmax <- 5 # max fert type
-  yearsToMem <- c(30)#,50)
+  yearsToMem <- c(30,50)
 }
 CSCrun <- T
 #vPREBAS <- "newVersion"
