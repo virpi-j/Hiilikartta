@@ -337,6 +337,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
     ageplot <- F
     if(ageplot){
     for(agei in 1:length(c(0,yearsToMem))){
+      par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
       for(ferti in 1:fertmax){
         if(names(output[[ferti]][[agei]])[ij]!="age"){
           tmp <- output[[ferti]][[agei]][[ij]]
