@@ -4,7 +4,7 @@ if(length(dev.list())>0) dev.off()
 print(paste("region",r_no))
 toFile <- F
 set.seed(1)
-setwd("~/HiilikarttaGH/")
+setwd(projDir)
 #source("/scratch/project_2000994/PREBASruns/PREBAStesting/localSettins.R",local=T)
 
 nSitesRun <-100#00
@@ -36,7 +36,7 @@ climModids <- sampleIDs <- 1:length(climMod) # for iterations
 rcps <- rcpsFile <-paste0(climMod[climModid],rcpx[climScen])
 rcpsName <- rcps
 
-source("~/HiilikarttaGH/settings.R", local = T)
+source(paste0(projDir,"settings.R"), local = T)
 print(paste("vPREBAS =", vPREBAS))
 regnames <- c("Uusimaa", "Ahvenanmaa", "Keski-Pohjanmaa", "Pirkanmaa",
               "Etela-Karjala", "Keski-Suomi", "Pohjois-Savo", 
@@ -85,7 +85,7 @@ endingYear = 2100
 nYears = endingYear-startingYear
 
 #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
-source("~/HiilikarttaGH/functions.R", local = T)
+source(paste0(projDir,"functions.R"), local = T)
 outType <- "testRun"
 harvScen <- "Base"
 harvInten <- "Base"
@@ -197,13 +197,15 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
     print(paste(harvScen,"/",harvInten,"/ fert =",ferti))
     time0 <- Sys.time()
     outputAgei <-list()
+    initAges <- c(NA,yearsToMem)
     init0 <- 1
-    if(ingrowth) init0 <- 0
+    if(ingrowth) initAges <- c(NA, NA,yearsToMem) #init0 <- 0
     initAgei <- init0
-    for(initAgei in init0:length(c(NA,yearsToMem))){ # 50#NA
-      if(initAgei==0){ 
-        initAge <- NA
-      } else {initAge <- c(NA,yearsToMem)[initAgei]}
+    for(initAgei in init0:length(initAges)){ # 50#NA
+      initAge <- initAges[initAgei]
+      #if(initAgei==0){ 
+      #  initAge <- NA
+      #} else {initAge <- c(NA,yearsToMem)[initAgei]}
       toMem <- ls()
       dataS <- dataSorig
       if(CoeffSim){
@@ -232,7 +234,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
       if(manualRun){
         RCP=climScen; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; outType = "hiiliKartta"; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=NULL; P0currclim=NA; fT0=NA; sampleID <- 1
       }
-      if(initAgei==0){
+      if(initAgei==1){
         out <- lapply(sampleIDs, function(jx) {
           runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
                    RCP = climScen, initAge = initAge)})
@@ -241,7 +243,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         #    runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = outType, RCP = climScen, initAge = initAge)
         #  }, mc.cores = nCores,mc.silent=FALSE)      
         #}
-        if(harvSceni==harvScens[1] & initAgei==0){ # is.na(initAge)){
+        if(harvSceni==harvScens[1]){ # is.na(initAge)){
           multiOut <- array(0,dim = c(dim(out[[1]]$restartMod$multiOut),length(sampleIDs)))
           GVOut <- array(0,dim = c(dim(out[[1]]$restartMod$GVout),length(sampleIDs)))
           reStartSoil <- array(0,dim = c(dim(out[[1]]$reStartSoil),length(sampleIDs)))
@@ -267,7 +269,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
           names(reStartMod) <- c("multiOut", "GVOut")
           save(reStartMod,reStartSoil,
                file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_startStates",r_no,"_fert",ferti,".rdata"))
-          
+          print(paste("Init stages saved for ages")); print(yearsToMem)
         }
       #}
       } else {

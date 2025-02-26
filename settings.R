@@ -58,7 +58,8 @@ if(!exists("siteTypes")) siteTypes=1:20
 if(!exists("landClassX")) landClassX=1:3
 ###flag for settings the regions to consider
 if(!exists("regSets")) regSets <- "maakunta" ### "forCent", "maakunta"
-if(!exists("minDharvX")) minDharvX <- 15 ### minimum DBH for clearcutting
+if(!exists("minDharvX")) minDharvX <- 999 ### minimum DBH for clearcutting -> stricktly Tapio rules
+#if(!exists("minDharvX")) minDharvX <- 15 ### minimum DBH for clearcutting
 if(!exists("compHarvX")) compHarvX=0.
 if(!exists("ageHarvPriorX")) ageHarvPriorX=120.
 if(!exists("thinIntX")) thinIntX=0.9
