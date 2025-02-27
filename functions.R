@@ -172,40 +172,42 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   i = 0
   rcpfile = rcps
   load(paste(climatepath, rcpfile,".rdata", sep=""))  
+
   if(is.null(climdata)){
-  if(rcpfile=="CurrClim"){
-    #####process data considering only current climate###
-    # dat <- dat[rday %in% 1:10958] #uncomment to select some years (10958 needs to be modified)
-    maxRday <- max(dat$rday)
-    #if(outType %in% c("uncRun","uncSeg")){
-    #  if(unc100){
-    #    xday <- c(dat$rday,(dat$rday+maxRday),(dat$rday+maxRday*2),
-    #              (dat$rday+maxRday*3),(dat$rday+maxRday*4))
-    #    dat = rbind(dat,dat,dat,dat,dat)
-    #  } else {
-    #    xday <- c(dat$rday,(dat$rday+maxRday),(dat$rday+maxRday*2))
-    #    dat = rbind(dat,dat,dat)
-    #  }
-    #} else {
+    print("Load clim data")
+    if(rcpfile=="CurrClim"){
+      #####process data considering only current climate###
+      # dat <- dat[rday %in% 1:10958] #uncomment to select some years (10958 needs to be modified)
+      maxRday <- max(dat$rday)
+      #if(outType %in% c("uncRun","uncSeg")){
+      #  if(unc100){
+      #    xday <- c(dat$rday,(dat$rday+maxRday),(dat$rday+maxRday*2),
+      #              (dat$rday+maxRday*3),(dat$rday+maxRday*4))
+      #    dat = rbind(dat,dat,dat,dat,dat)
+      #  } else {
+      #    xday <- c(dat$rday,(dat$rday+maxRday),(dat$rday+maxRday*2))
+      #    dat = rbind(dat,dat,dat)
+      #  }
+      #} else {
       xday <- c(dat$rday,(dat$rday+maxRday),(dat$rday+maxRday*2))
       dat = rbind(dat,dat,dat)
-    #}
-    dat[,rday:=xday]
-  } else {
-    missingIDs <- setdiff(unique(sampleX$id), unique(dat$id))
-    if(length(missingIDs)>0){
-      coords <- fread("/scratch/project_2000994/RCP/coordinates")
-      for(i in 1:length(missingIDs)){
-        idX <- order((coords$x - coords$x[missingIDs[i]])^2 + (coords$y - coords$y[missingIDs[i]])^2)
-        idX <- idX[idX%in%unique(dat$id)][1]
-        nn<-which(sampleX$id==missingIDs[i]) 
-        sampleX[nn,climID:=idX]
-        sampleX[nn,id:=idX]
-        print(paste("Clim model ID",sampleID,"clim ids: ",missingIDs[i], "was replaced with",idX))
+      #}
+      dat[,rday:=xday]
+    } else {
+      missingIDs <- setdiff(unique(sampleX$id), unique(dat$id))
+      if(length(missingIDs)>0){
+        coords <- fread("/scratch/project_2000994/RCP/coordinates")
+        for(i in 1:length(missingIDs)){
+          idX <- order((coords$x - coords$x[missingIDs[i]])^2 + (coords$y - coords$y[missingIDs[i]])^2)
+          idX <- idX[idX%in%unique(dat$id)][1]
+          nn<-which(sampleX$id==missingIDs[i]) 
+          sampleX[nn,climID:=idX]
+          sampleX[nn,id:=idX]
+          print(paste("Clim model ID",sampleID,"clim ids: ",missingIDs[i], "was replaced with",idX))
+        }
       }
     }
-  }
-  gc()
+    gc()
   }
   ## Prepare the same initial state for all harvest scenarios that are simulated in a loop below
   data.sample <- sample_data.f(sampleX, nSample)
@@ -492,9 +494,9 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
                           cutAreas =cutArX,compHarv=compHarvX,
                           startSimYear=reStartYear)
       } else {
-        print("save regionPrebas input")
-        save(initPrebas, HarvLimX, minDharvX,cutArX,compHarvX,
-             file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/testRunHiilikartta.rdata"))
+        #print("save regionPrebas input")
+        #save(initPrebas, HarvLimX, minDharvX,cutArX,compHarvX,
+        #     file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/testRunHiilikartta.rdata"))
         print("start regionPrebas...")
         region <- regionPrebas(initPrebas, HarvLim = as.numeric(HarvLimX),
                           minDharv = minDharvX,cutAreas =cutArX,
@@ -679,8 +681,8 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
       reStartMod$GVout <- region$GVout[1:nSitesRun0,yearsToMem,]
       reStartMod$multiOut <- region$multiOut[1:nSitesRun0,yearsToMem,,,]
       reStartSoil = region$soilC[1:nSitesRun0,yearsToMem,,,]
-      out <- list(V, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, reStartMod,reStartSoil)
-      names(out) <- c("V", "age", "nep", "wTot", "wGV", "soilC", "litters","Vpine", "Vspruce", "Vbirch","restartMod","reStartSoil")
+      out <- list(V, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, reStartMod,reStartSoil, clim)
+      names(out) <- c("V", "age", "nep", "wTot", "wGV", "soilC", "litters","Vpine", "Vspruce", "Vbirch","restartMod","reStartSoil","clim")
     } else {
       out <- list(V, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch)
       names(out) <- c("V", "age", "nep", "wTot", "wGV","soilC", "litters","Vpine", "Vspruce", "Vbirch")
