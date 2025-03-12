@@ -494,9 +494,9 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
                           cutAreas =cutArX,compHarv=compHarvX,
                           startSimYear=reStartYear)
       } else {
-        #print("save regionPrebas input")
-        #save(initPrebas, HarvLimX, minDharvX,cutArX,compHarvX,
-        #     file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/testRunHiilikartta.rdata"))
+        print("save regionPrebas input")
+        save(initPrebas, HarvLimX, minDharvX,cutArX,compHarvX,
+             file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/testRunHiilikartta.rdata"))
         print("start regionPrebas...")
         region <- regionPrebas(initPrebas, HarvLim = as.numeric(HarvLimX),
                           minDharv = minDharvX,cutAreas =cutArX,

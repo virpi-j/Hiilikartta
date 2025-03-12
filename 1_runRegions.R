@@ -46,23 +46,16 @@ regnames <- c("Uusimaa", "Ahvenanmaa", "Keski-Pohjanmaa", "Pirkanmaa",
 r_nos <- c(1, 21, 16, 6, 9, 13, 11, 19, 5, 15, 2, 14, 7, 4, 8, 18, 10, 12, 17) # Official numbering compared to PREBAS run region ids
 #devtools::source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/settings.R")
 
-#setX=1
-#sampleIDs <- 1
 set.seed(1)
-#nn <- sample(1:dim(data.all)[1], nSitesRun, replace = F)
-#dataS <- data.all[nn,]
 nn0 <- order(data.all$age)[1:nSitesRun0] # The youngest segments to test set
 nn1 <- sample(setdiff(1:dim(data.all)[1],nn0), nSitesRun - nSitesRun0)
 dataS <- data.all[c(nn0,nn1),]
-#ops <- split(data.all, sample(1:nSamples, nrow(data.all), replace=T))
-# test
 
 load(paste0("/scratch/project_2000994/PREBASruns/finRuns/input/maakunta/maakunta_",r_no,"_IDsTab.rdata"))
 data.IDs <- data.IDs[segID!=0]
 data.IDs$segID <- data.IDs$maakuntaID
 setkey(data.IDs,segID)
 setkey(dataS,segID)
-#setkey(data.IDs,maakuntaID)
 
 tabX <- merge(data.IDs,dataS)
 ntabX <- tabX[,.I[which.max(y)],by=segID]$V1
@@ -72,10 +65,8 @@ set_thin_PROJ6_warnings(TRUE)
 xy <- dataS[,c("segID","x","y")]
 coordinates(xy) <- c("x","y")
 proj4string(xy) <- crsX
-#cord = SpatialPoints(xy, proj4string=CRS("+init=EPSG:3067"))
 location<-as.data.frame(spTransform(xy, CRS("+init=epsg:4326")))
 dataS$lat <- location$y
-
 
 ops <- list(dataS)
 gc()
@@ -121,11 +112,13 @@ tmps <- data.all[,c("pine","spruce","birch","fert","age","ba")]
 tmp <- tmps[,1:3]/rowSums(tmps[,1:3])
 tmp[rowSums(tmps)==0,]<-0
 nsets <- 7
+
 speciess <- array(0,c(nSitesRun0,3,nsets,fertmax),
-                dimnames = list(1:nSitesRun0,c("pine","spruce","birch"),  
-                                c("pinedom","sprucedom","birchdom",
-                                                "pinebirch","sprucebirch","sprucepine","sprucepinebirch"),
-                                paste0("fert",1:fertmax)))
+                  dimnames = list(1:nSitesRun0,c("pine","spruce","birch"),  
+                                  c("pinedom","sprucedom","birchdom",
+                                    "pinebirch","sprucebirch","sprucepine","sprucepinebirch"),
+                                  paste0("fert",1:fertmax)))
+
 for(ferti in 1:fertmax){
   # pine dominated
   pinedom <- tmps[which(tmp$pine>0.5 & tmps$fert==ferti),]
@@ -157,14 +150,7 @@ for(ferti in 1:fertmax){
   speciess[,,"sprucepinebirch",ferti] <- as.matrix(sprucepinebirch)
 }
 
-#speciess <- array(0,c(nsets,4),dimnames = list(paste0("iter",1:nsets),c("pine","spruce","birch","decid")))
-#speciess[1,] <- c(100,0,0,0)#tmps[which.max(tmp$pine),]#c(100,5,5,0)
-#speciess[2,] <- c(0,100,0,0)#tmps[which.max(tmp$spruce),]#c(5,100,5,0) # pine, spruce, birch, deciduous
-#speciess[3,] <- c(0,0,100,0)#tmps[which.max(tmp$birch),]#c(5,5,100,0)
-#speciess[4,] <- c(0,50,150,0)#c(2,49,49,0)
-#speciess[5,] <- c(50,50,0,0)#c(49,2,49,0)
 speciesNamesLong <- speciesNames <- dimnames(speciess)[[3]]#c("100sp1","100sp2","sp3","50sp250sp3","50sp150sp3")
-#speciesNamesLong <- c("manty", "kuusi", "lehtipuu", "kuusi-lehtipuu","manty-lehtipuu")
 landclass0 <- 1 # landclass for sample0
 minpeat0 <- 1 # mineral soils for sample0 (minral, drainet peat, undrained peat)
 soiltype0 <- 1 # soiltypes (mineral soils, spruce mire, pine mire, ombrotrophic bog)
@@ -172,7 +158,6 @@ soiltype0 <- 1 # soiltypes (mineral soils, spruce mire, pine mire, ombrotrophic 
 harvSceni <- "NoHarv"
 harvScens <- c("NoHarv","Mitigation","BaseLow","adapt","baseTapio", "Base")
 harvScens <- c("NoHarv","baseTapio")
-#harvScens <- c("baseTapio","NoHarv")
 ferti <- 1
 speciesSeti <- 1
 speciesName <- speciesNames[speciesSeti]
