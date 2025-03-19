@@ -143,7 +143,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   
   #if(outType %in% c("uncRun","uncSeg")){
   #  area_tot <- sum(data.all$area) # ha
-    sampleX[,area := 16^2/10000] 
+  #  sampleX[,area := 16^2/10000] 
   #  cA <- 1/nrow(sampleX) #area_tot/nrow(sampleX) 
   #  harvestLims <- as.numeric(harvestLimsr[sampleID,])
   #  HarvLimMaak[,1]<-harvestLims[1]*HarvLimMaak[,1]
@@ -837,8 +837,7 @@ sample_data.f = function(sampleX, nSample) {
 #  for (col in colnames(data.sample)[c(3, 5:11)]) set(data.sample, j=col,
 ##  for (col in colnames(data.sample)[c(3, 5:12,14)]) set(data.sample, j=col,
  #                                                    value=as.double(data.sample[[col]]))
-  
-  colnams <- c("regID",  "N",      "ba",     "age",    "dbh",    "pine",   "spruce", "birch" )
+  colnams <- c("maakuntaID", "ba", "age", "dbh", "pine", "spruce",  "birch", "decid")
   #for (col in colnames(data.sample)[c(3, 5:11)]){ 
   #print(colnames(data.sample))
   #print(colnames(data.sample)[match(colnams, colnames(sampleX))])
@@ -846,11 +845,11 @@ sample_data.f = function(sampleX, nSample) {
     #print(col)
     set(data.sample, j=col, value=as.double(data.sample[[col]]))
   }  
-  if("y"%in%colnames(data.sample))set(data.sample, j="y", value=as.double(data.sample[[col]]))
-  if("x"%in%colnames(data.sample))set(data.sample, j="x", value=as.double(data.sample[[col]]))
-  if("lat"%in%colnames(data.sample))set(data.sample, j="lat", value=as.double(data.sample[[col]]))
-  if("h"%in%colnames(data.sample))set(data.sample, j="h", value=as.double(data.sample[[col]]))
-  if("decid"%in%colnames(data.sample))set(data.sample, j="decid", value=as.double(data.sample[[col]]))
+#  if("y"%in%colnames(data.sample))set(data.sample, j="y", value=as.double(data.sample[[col]]))
+#  if("x"%in%colnames(data.sample))set(data.sample, j="x", value=as.double(data.sample[[col]]))
+#  if("lat"%in%colnames(data.sample))set(data.sample, j="lat", value=as.double(data.sample[[col]]))
+#  if("h"%in%colnames(data.sample))set(data.sample, j="h", value=as.double(data.sample[[col]]))
+#  if("decid"%in%colnames(data.sample))set(data.sample, j="decid", value=as.double(data.sample[[col]]))
   
   ## -----------------------------------------------------------------
   
