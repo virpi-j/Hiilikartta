@@ -68,7 +68,7 @@ proj4string(xy) <- crsX
 location<-as.data.frame(spTransform(xy, CRS("+init=epsg:4326")))
 dataS$lat <- location$y
 
-ops <- list(dataS)
+#ops <- list(dataS)
 gc()
 toMem <- ls()
 startingYear = 2015
@@ -90,13 +90,13 @@ if(manualRun){
   coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077#g m-2 y-1
   landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas
   initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1
-  sampleX=NULL; P0currclim=NA; fT0=NA
+  sampleX = dataS; P0currclim=NA; fT0=NA
   sampleID = 1; initAge=NA
 }
 
 # initialize 
 print(paste("Run initialization for region",r_no,", sample size",nSitesRun))
-out <- runModel(1,harvScen="Base",harvInten="Base",rcps="CurrClim",RCP=0, outType = outType)
+out <- runModel(1,sampleX = dataS, harvScen="Base",harvInten="Base",rcps="CurrClim",RCP=0, outType = outType)
 clim <- out$clim
 
 CoeffSim <- T
@@ -216,18 +216,18 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         dataS$landclass[1:nSitesRun0] <- simInitData$landclass
         dataS$cons[1:nSitesRun0] <- simInitData$cons
         if(n0only) dataS <- dataS[1:nSitesRun0,]
-        ops <<- list(dataS)
+        #ops <<- list(dataS)
       }
       
       #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
       #source("~/Hiilikartta/functions.R", local = T)
       if(manualRun){
-        RCP=climScen; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; outType = "hiiliKartta"; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=NULL; P0currclim=NA; fT0=NA; sampleID <- 1
+        RCP=climScen; climdata=NULL; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; outType = "hiiliKartta"; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=dataS; P0currclim=NA; fT0=NA; sampleID <- 1
       }
       if(initAgei==1){
           out <- lapply(sampleIDs, function(jx) {
           runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
-                   RCP = climScen, initAge = initAge, ingrowth = F)})
+                   RCP = climScen, initAge = initAge, ingrowth = F, sampleX = dataS)})
           #} else {
           #  out <- mclapply(sampleIDs, function(jx) {
           #    runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = outType, RCP = climScen, initAge = initAge)
@@ -270,7 +270,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
             out <- lapply(sampleIDs, function(jx) {
               print(paste("open data for clim",climModids[jx]))
               load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_climdata",r_no,"_clim",climModids[jx],".rdata"))
-              runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
+              runModel(jx,sampleX = dataS, harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
                        ingrowth = ingrowth, climdata = climdata,
                        RCP = climScen, initAge = initAge)})
           }
@@ -279,7 +279,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         out <- lapply(sampleIDs, function(jx) {
           print(paste("open data for clim",climModids[jx]))
           load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_climdata",r_no,"_clim",climModids[jx],".rdata"))
-          runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
+          runModel(jx,sampleX = dataS, harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
                    ingrowth = ingrowth,climdata = climdata, 
                    RCP = climScen, initAge = initAge)})
         #  tta <- aetgs

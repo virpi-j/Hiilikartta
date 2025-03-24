@@ -243,9 +243,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
       initPrebas$multiInitVar[1:nSitesRun0,,1:nlayers] <- initmultiOutSegs[,c("species","age","H","D","BA","Hc_base","Ac"),1:nlayers,1]
     }
   }
-  #print(initPrebas$multiInitVar[1,"age",])
-  #print(initPrebas$multiInitVar[1,"D",])
-  
+
   opsna <- which(is.na(initPrebas$multiInitVar))
   initPrebas$multiInitVar[opsna] <- 0.
   
@@ -318,6 +316,15 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
       harvInten = "NoHarv"
     }else if(harvScen=="Tapio"){
       HarvLim1 = 0
+    } else if(harvScen=="Powerline_under"){
+      Ageclearcut = Hclearcut = Dclearcut = rep(NA,nSample) 
+      fixAinit <- rep(0,nSample)
+      powerlinesites <- 1:nSample
+      Ageclearcut[powerlinesites] <- 8
+      Hclearcut[powerlinesites] <- 3
+      Dclearcut[powerlinesites] <- 999 #just a big number
+      fixAinit[powerlinesites] <- 3 ### let's discuss about this on tuesday
+      #ciao <- TransectRun(fixAinit=fixAinit,inDclct = Dclearcut,inHclct = Hclearcut,inAclct = Ageclearcut)
     }else{
       HarvLim0 = nfiareas[ID==r_no, VOL_fraction]*rem[Scenario == harvScen & Area == Region, "1990-2013"]
       HarvLim0  = (totAreaSample/1000) / nfiareas[ID == r_no, AREA] * 1e3 *HarvLim0
@@ -369,22 +376,23 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   
   ###calculate clearcutting area for the sample
   #if(!is.na(cutArX)){
-  print("calculating clearcutting areas")
-  clcutArX <- clcutAr * sum(areas)/sum(data.all$area)
-  if(length(clcutArX)<nYears) clcutArX<-c(clcutArX,clcutArX[rep(length(clcutArX),nYears-length(clcutArX))])
-  clcutArX <- cbind(clcutArX[1:nYears],0.)
-  tendX <- tendingAr * sum(areas)/sum(data.all$area)
-  if(length(tendX)<nYears) tendX<-c(tendX,tendX[rep(length(tendX),nYears-length(tendX))])
-  tendX <- cbind(tendX[1:nYears],0.)
-  fThinX <- firstThinAr * sum(areas)/sum(data.all$area)
-  if(length(fThinX)<nYears) fThinX<-c(fThinX,fThinX[rep(length(fThinX),nYears-length(fThinX))])
-  fThinX <- cbind(fThinX[1:nYears],0.)
-  cutArX <- cbind(clcutArX,tendX)
-  cutArX <- cbind(cutArX,fThinX)
-  if(harvInten == "Low"){ cutArX <- cutArX * 1}
-  if(harvInten == "MaxSust"){cutArX <- cutArX * 1.2}
-  if(harvScen == "NoHarv"){cutArX <- cutArX * 0.}
-  
+  if(!harvScen%in%c("Powerline_under","Powerline_border")){
+    print("calculating clearcutting areas")
+    clcutArX <- clcutAr * sum(areas)/sum(data.all$area)
+    if(length(clcutArX)<nYears) clcutArX<-c(clcutArX,clcutArX[rep(length(clcutArX),nYears-length(clcutArX))])
+    clcutArX <- cbind(clcutArX[1:nYears],0.)
+    tendX <- tendingAr * sum(areas)/sum(data.all$area)
+    if(length(tendX)<nYears) tendX<-c(tendX,tendX[rep(length(tendX),nYears-length(tendX))])
+    tendX <- cbind(tendX[1:nYears],0.)
+    fThinX <- firstThinAr * sum(areas)/sum(data.all$area)
+    if(length(fThinX)<nYears) fThinX<-c(fThinX,fThinX[rep(length(fThinX),nYears-length(fThinX))])
+    fThinX <- cbind(fThinX[1:nYears],0.)
+    cutArX <- cbind(clcutArX,tendX)
+    cutArX <- cbind(cutArX,fThinX)
+    if(harvInten == "Low"){ cutArX <- cutArX * 1}
+    if(harvInten == "MaxSust"){cutArX <- cutArX * 1.2}
+    if(harvScen == "NoHarv"){cutArX <- cutArX * 0.}
+  }
   ###run PREBAS
   if(initilizeSoil){
     if(!(harvScen =="Base" & harvInten == "Base") | rcps!="CurrClim"){
@@ -483,6 +491,10 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
                         oldLayer = 1,thinFact=thinFact,
                         startSimYear=reStartYear)
     }
+  } else if(harvScen%in%c("Powerline_under","Powerline_border")){
+    region <- prebas(initPrebas,fixAinit=fixAinit,inDclct = Dclearcut,inHclct = Hclearcut,inAclct = Ageclearcut)
+    #ciao <- TransectRun(fixAinit=fixAinit,inDclct = Dclearcut,inHclct = Hclearcut,inAclct = Ageclearcut)
+    
   }else{
     if(harvScen=="baseTapio"){
       region <- funPreb(initPrebas,compHarv=compHarvX,
