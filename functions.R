@@ -24,7 +24,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   # cons10run -> flag for conservation areas 10% run
   
   # print(date())
-  if(!is.null(sampleX)) sampleID <- paste0("sampleX_",sampleID)
+  #if(!is.null(sampleX)) sampleID <- paste0("sampleX_",sampleID)
   print(paste("start climate model ID",sampleID))
   
   ###flag for soil initialization
@@ -317,14 +317,6 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     }else if(harvScen=="Tapio"){
       HarvLim1 = 0
     } else if(harvScen=="Powerline_under"){
-      Ageclearcut = Hclearcut = Dclearcut = rep(NA,nSample) 
-      fixAinit <- rep(0,nSample)
-      powerlinesites <- 1:nSample
-      Ageclearcut[powerlinesites] <- 8
-      Hclearcut[powerlinesites] <- 3
-      Dclearcut[powerlinesites] <- 999 #just a big number
-      fixAinit[powerlinesites] <- 3 ### let's discuss about this on tuesday
-      #ciao <- TransectRun(fixAinit=fixAinit,inDclct = Dclearcut,inHclct = Hclearcut,inAclct = Ageclearcut)
     }else{
       HarvLim0 = nfiareas[ID==r_no, VOL_fraction]*rem[Scenario == harvScen & Area == Region, "1990-2013"]
       HarvLim0  = (totAreaSample/1000) / nfiareas[ID == r_no, AREA] * 1e3 *HarvLim0
@@ -499,6 +491,12 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     if(harvScen=="baseTapio"){
       region <- funPreb(initPrebas,compHarv=compHarvX,
                         startSimYear=reStartYear)
+    } else if(harvScen%in%c("Powerline_under","Powerline_border")){
+      print("start regionPrebas for powerlines...")
+      region <- regionPrebas(initPrebas, #HarvLim = as.numeric(HarvLimX),
+                             #minDharv = minDharvX,cutAreas =cutArX,
+                             #compHarv=compHarvX,
+                             startSimYear=reStartYear)
     }else{
       ##Don't pass minDharvX if NA
       if (is.na(minDharvX)) {
@@ -2435,26 +2433,63 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
   } else {
     #    save(nYears,nSites,siteInfo,lat,pCrobasX,defaultThin,ClCut,areas,energyCut,ftTapioParX,tTapioParX,initVar,clim,mortMod, file=paste0("testDataInit","master",".rdata"))
     #    print("data saved")
+    
     print("run initPrebas")
-    initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),siteInfo=siteInfo,
-                                latitude = lat,
-                                pCROBAS = pCrobasX,
-                                ECMmod = 1,
-                                defaultThin = defaultThin,
-                                ClCut = ClCut, 
-                                areas =areas,
-                                ingrowth = ingrowth,
-                                energyCut = energyCut, 
-                                ftTapioPar = ftTapioParX,
-                                tTapioPar = tTapioParX,
-                                multiInitVar = as.array(initVar),
-                                PAR = clim$PAR[, 1:(nYears*365)],
-                                TAir=clim$TAir[, 1:(nYears*365)],
-                                VPD=clim$VPD[, 1:(nYears*365)],
-                                Precip=clim$Precip[, 1:(nYears*365)],
-                                CO2=clim$CO2[, 1:(nYears*365)],
-                                yassoRun = 1,
-                                mortMod = mortMod)
+    if(harv=="Powerline_under"){
+      print("Init for powerline cases")
+      Ageclearcut = Hclearcut = Dclearcut = rep(NA,nSample) 
+      fixAinit <- rep(0,nSample)
+      powerlinesites <- 1:nSample
+      Ageclearcut[powerlinesites] <- 8
+      Hclearcut[powerlinesites] <- 3
+      Dclearcut[powerlinesites] <- 999 #just a big number
+      fixAinit[powerlinesites] <- 3 ### let's discuss about this on tuesday
+      initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),siteInfo=siteInfo,
+                                  latitude = lat,
+                                  fixAinit = fixAinit,
+                                  inDclct = Dclearcut,
+                                  inHclct = Hclearcut,
+                                  inAclct = Ageclearcut,
+                                  pCROBAS = pCrobasX,
+                                  ECMmod = 1,
+                                  defaultThin = defaultThin,
+                                  ClCut = ClCut, 
+                                  areas =areas,
+                                  ingrowth = ingrowth,
+                                  energyCut = energyCut, 
+                                  ftTapioPar = ftTapioParX,
+                                  tTapioPar = tTapioParX,
+                                  multiInitVar = as.array(initVar),
+                                  PAR = clim$PAR[, 1:(nYears*365)],
+                                  TAir=clim$TAir[, 1:(nYears*365)],
+                                  VPD=clim$VPD[, 1:(nYears*365)],
+                                  Precip=clim$Precip[, 1:(nYears*365)],
+                                  CO2=clim$CO2[, 1:(nYears*365)],
+                                  yassoRun = 1,
+                                  mortMod = mortMod)
+      
+    } else {
+      initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),siteInfo=siteInfo,
+                                  latitude = lat,
+                                  pCROBAS = pCrobasX,
+                                  ECMmod = 1,
+                                  defaultThin = defaultThin,
+                                  ClCut = ClCut, 
+                                  areas =areas,
+                                  ingrowth = ingrowth,
+                                  energyCut = energyCut, 
+                                  ftTapioPar = ftTapioParX,
+                                  tTapioPar = tTapioParX,
+                                  multiInitVar = as.array(initVar),
+                                  PAR = clim$PAR[, 1:(nYears*365)],
+                                  TAir=clim$TAir[, 1:(nYears*365)],
+                                  VPD=clim$VPD[, 1:(nYears*365)],
+                                  Precip=clim$Precip[, 1:(nYears*365)],
+                                  CO2=clim$CO2[, 1:(nYears*365)],
+                                  yassoRun = 1,
+                                  mortMod = mortMod)
+      
+    }
     
   }
   

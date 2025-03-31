@@ -91,7 +91,9 @@ if(manualRun){
   landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas
   initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1
   sampleX = dataS; P0currclim=NA; fT0=NA
+  climdata=NULL
   sampleID = 1; initAge=NA
+  #harvScen <- "Powerline_under"
 }
 
 # initialize 
