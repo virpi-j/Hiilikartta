@@ -495,7 +495,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
       print("start regionPrebas for powerlines...")
       region <- regionPrebas(initPrebas, #HarvLim = as.numeric(HarvLimX),
                              #minDharv = minDharvX,cutAreas =cutArX,
-                             #compHarv=compHarvX,
+                             compHarv=compHarvX,
                              startSimYear=reStartYear)
     }else{
       ##Don't pass minDharvX if NA
@@ -2435,13 +2435,18 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
     #    print("data saved")
     
     print("run initPrebas")
-    if(harv=="Powerline_under"){
+    if(harvScen%in%c("Powerline_under","Powerline_border")){
       print("Init for powerline cases")
-      Ageclearcut = Hclearcut = Dclearcut = rep(NA,nSample) 
-      fixAinit <- rep(0,nSample)
-      powerlinesites <- 1:nSample
-      Ageclearcut[powerlinesites] <- 8
-      Hclearcut[powerlinesites] <- 3
+      Ageclearcut = Hclearcut = Dclearcut = rep(NA,nSites) 
+      fixAinit <- rep(0,nSites)
+      powerlinesites <- 1:nSites
+      if(harvScen=="Powerline_under"){
+        Ageclearcut[powerlinesites] <- 8
+        Hclearcut[powerlinesites] <- 3
+      } else {
+        Ageclearcut[powerlinesites] <- 25
+        Hclearcut[powerlinesites] <- 10
+      }
       Dclearcut[powerlinesites] <- 999 #just a big number
       fixAinit[powerlinesites] <- 3 ### let's discuss about this on tuesday
       initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),siteInfo=siteInfo,
@@ -2452,11 +2457,11 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
                                   inAclct = Ageclearcut,
                                   pCROBAS = pCrobasX,
                                   ECMmod = 1,
-                                  defaultThin = defaultThin,
-                                  ClCut = ClCut, 
+                                  #defaultThin = defaultThin,
+                                  #ClCut = ClCut, 
                                   areas =areas,
                                   ingrowth = ingrowth,
-                                  energyCut = energyCut, 
+                                  #energyCut = energyCut, 
                                   ftTapioPar = ftTapioParX,
                                   tTapioPar = tTapioParX,
                                   multiInitVar = as.array(initVar),
