@@ -36,7 +36,7 @@ climModids <- sampleIDs <- 1:length(climMod) # for iterations
 rcps <- rcpsFile <-paste0(climMod[climModid],rcpx[climScen])
 rcpsName <- rcps
 
-source(paste0(projDir,"settings.R"), local = T)
+source(paste0(projDir,"settings.R"))#, local = T)
 print(paste("vPREBAS =", vPREBAS))
 regnames <- c("Uusimaa", "Ahvenanmaa", "Keski-Pohjanmaa", "Pirkanmaa",
               "Etela-Karjala", "Keski-Suomi", "Pohjois-Savo", 
@@ -177,6 +177,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
     harvScen <- harvSceni
     harvInten <- "Low"
   }
+  print(paste(harvScen,"/",harvInten))
   n0only <- F
   if(harvSceni%in%c("NoHarv","baseTapio")) n0only <- T
   print(paste("Species",speciesName,"run..."))
