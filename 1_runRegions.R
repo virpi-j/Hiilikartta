@@ -66,7 +66,7 @@ xy <- dataS[,c("segID","x","y")]
 coordinates(xy) <- c("x","y")
 proj4string(xy) <- crsX
 location<-as.data.frame(spTransform(xy, CRS("+init=epsg:4326")))
-dataS$lat <- location$y
+dataS$lat <- location$coords.x2
 
 #ops <- list(dataS)
 gc()
@@ -158,7 +158,7 @@ minpeat0 <- 1 # mineral soils for sample0 (minral, drainet peat, undrained peat)
 soiltype0 <- 1 # soiltypes (mineral soils, spruce mire, pine mire, ombrotrophic bog)
 
 harvSceni <- "NoHarv"
-harvScens <- c("NoHarv","Mitigation","BaseLow","adapt","baseTapio", "Base")
+#harvScens <- c("NoHarv","Mitigation","BaseLow","adapt","baseTapio", "Base")
 harvScens <- c("NoHarv","baseTapio","Powerline_under","Powerline_border")
 ferti <- 1
 speciesSeti <- 1
