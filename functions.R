@@ -504,9 +504,9 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
                           cutAreas =cutArX,compHarv=compHarvX,
                           startSimYear=reStartYear)
       } else {
-        print("save regionPrebas input")
-        save(initPrebas, HarvLimX, minDharvX,cutArX,compHarvX,
-             file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/testRunHiilikartta.rdata"))
+        #print("save regionPrebas input")
+        #save(initPrebas, HarvLimX, minDharvX,cutArX,compHarvX,
+        #     file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/testRunHiilikartta.rdata"))
         print("start regionPrebas...")
         region <- regionPrebas(initPrebas, HarvLim = as.numeric(HarvLimX),
                           minDharv = minDharvX,cutAreas =cutArX,
@@ -2379,13 +2379,14 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
   if(!exists("tTapioParX")) tTapioParX = tTapio
   #initVar[,6,] <- aaply(initVar,1,findHcNAs,pHcM)[,6,]*HcFactorX
   initVar[,6,] <- aaply(initVar,1,findHcNAs,pHcM,pCrobasX,HcModVx)[,6,]*HcFactorX
-  set_thin_PROJ6_warnings(TRUE)
+  #set_thin_PROJ6_warnings(TRUE)
   xy <- sampleX[,c("segID","x","y")]
   coordinates(xy) <- c("x","y")
   proj4string(xy) <- crsX
   #cord = SpatialPoints(xy, proj4string=CRS("+init=EPSG:3067"))
   location<-as.data.frame(spTransform(xy, CRS("+init=epsg:4326")))
-  lat <- location$y
+  lat <- location$coords.x2
+  print(lat[1:5])
   #print(paste("check crobas:",pCrobasX[55,3]))
   #print(pCrobasX)
   if(!is.na(P0currclim[1])){

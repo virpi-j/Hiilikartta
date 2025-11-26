@@ -61,7 +61,7 @@ tabX <- merge(data.IDs,dataS)
 ntabX <- tabX[,.I[which.max(y)],by=segID]$V1
 dataS <- cbind(dataS, tabX[ntabX,c("x","y")])
 
-set_thin_PROJ6_warnings(TRUE)
+#set_thin_PROJ6_warnings(TRUE)
 xy <- dataS[,c("segID","x","y")]
 coordinates(xy) <- c("x","y")
 proj4string(xy) <- crsX
