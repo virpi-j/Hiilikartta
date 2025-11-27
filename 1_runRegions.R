@@ -392,7 +392,6 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
 }
 ###########
 ij <- 1
-
 for(ij in 1:nrow(speciess)){
   #species <<- speciess[ij,]
   speciesName <<- speciesNames[ij]

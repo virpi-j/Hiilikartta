@@ -484,7 +484,23 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
                         startSimYear=reStartYear)
     }
   } else if(harvScen%in%c("Powerline_under","Powerline_border")){
-    region <- prebas(initPrebas,fixAinit=fixAinit,inDclct = Dclearcut,inHclct = Hclearcut,inAclct = Ageclearcut)
+    savings <- F
+    if(savings){
+      print("save input data.")
+      print(fixAinit)
+      print(Dclearcut)
+      print(Hclearcut)
+      print(Ageclearcut)
+      save(initPrebas, fixAinit, Dclearcut, Hclearcut, Ageclearcut, 
+           fïle="/scratch/project_2000994/PREBASruns/PREBAStesting/Hiilikartta_testinput.rdata")
+    }
+    print(paste("Run for",harvScen))
+    region <- funPreb(initPrebas)#,fixAinit=fixAinit,
+                     #inDclct = Dclearcut,inHclct = Hclearcut,
+                     #inAclct = Ageclearcut)
+    #region <- prebas(initPrebas,fixAinit=fixAinit,
+    #                 inDclct = Dclearcut,inHclct = Hclearcut,
+    #                 inAclct = Ageclearcut)
     #ciao <- TransectRun(fixAinit=fixAinit,inDclct = Dclearcut,inHclct = Hclearcut,inAclct = Ageclearcut)
     
   }else{
