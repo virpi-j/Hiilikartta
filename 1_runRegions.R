@@ -323,7 +323,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
       #}
     }
     output[[ferti]] <- outputAgei
-    names(output[[ferti]]) <- paste0("initAge",c(0, yearsToMem))
+    names(output[[ferti]]) <- paste0("initAge",inAs)
     print(paste0(harvScen," / fert",ferti," / age0 / V:"))
     print(output[[ferti]][[1]]$V[1,1:10,1])
     print(paste0(harvScen," / fert",ferti," / age30 / V:"))
