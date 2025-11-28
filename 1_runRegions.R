@@ -156,7 +156,7 @@ landclass0 <- 1 # landclass for sample0
 minpeat0 <- 1 # mineral soils for sample0 (minral, drainet peat, undrained peat)
 soiltype0 <- 1 # soiltypes (mineral soils, spruce mire, pine mire, ombrotrophic bog)
 
-harvSceni <- "NoHarv"
+harvSceni <- harvScens[1] #"NoHarv"
 #harvScens <- c("NoHarv","Mitigation","BaseLow","adapt","baseTapio", "Base")
 ferti <- 1
 speciesSeti <- 1
@@ -326,8 +326,10 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
     names(output[[ferti]]) <- paste0("initAge",inAs)
     print(paste0(harvScen," / fert",ferti," / age0 / V:"))
     print(output[[ferti]][[1]]$V[1,1:10,1])
-    print(paste0(harvScen," / fert",ferti," / age30 / V:"))
-    print(output[[ferti]][[2]]$V[1,1:10,1])
+    if(length(initAges)>1){
+      print(paste0(harvScen," / fert",ferti," / age30 / V:"))
+      print(output[[ferti]][[2]]$V[1,1:10,1])
+    }
   }
   names(output) <- paste0("fert",1:fertmax)
   
