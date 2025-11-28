@@ -6,7 +6,7 @@ set.seed(1)
 setwd(projDir)
 #source("/scratch/project_2000994/PREBASruns/PREBAStesting/localSettins.R",local=T)
 
-nSitesRun <-10000
+if(!exists("nSitesRun")) nSitesRun <-10000
 nSitesRun0 <- 100
 fertmax <- 5 # max fert type
 if(testaus){

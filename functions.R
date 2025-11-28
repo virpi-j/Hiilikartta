@@ -316,7 +316,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
       harvInten = "NoHarv"
     }else if(harvScen=="Tapio"){
       HarvLim1 = 0
-    } else if(harvScen=="Powerline_under"){
+    } else if(harvScen%in%c("Powerline_under","Powerline_border")){
     }else{
       HarvLim0 = nfiareas[ID==r_no, VOL_fraction]*rem[Scenario == harvScen & Area == Region, "1990-2013"]
       HarvLim0  = (totAreaSample/1000) / nfiareas[ID == r_no, AREA] * 1e3 *HarvLim0
@@ -341,19 +341,21 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     ## Therefore, we need to apply the areal fraction of removals scenarios
     ## nfiareas are in 1000 ha, model takes Harvlim in m3, while removals from Mela are 1000 m3
     #      HarvLim  = (nSample/1000) / nfiareas[ID == r_no, AREA] * 1e3 *HarvLim
-    if(year1harv==1){
-      HarvLim1 <- HarvLimX
-      if(harvInten == "Low"){ HarvLim1 <- HarvLimX * 0.6}
-      if(harvInten == "MaxSust"){HarvLim1 <- HarvLimX * 1.2}
-      if(harvScen == "NoHarv"){
-        HarvLim1 <- HarvLimX * 0.
-        initPrebas$ClCut = initPrebas$defaultThin = rep(0,nSample)
-        harvInten = harvScen
+    if(!harvScen%in%c("Powerline_under","Powerline_border")){
+      if(year1harv==1){
+        HarvLim1 <- HarvLimX
+        if(harvInten == "Low"){ HarvLim1 <- HarvLimX * 0.6}
+        if(harvInten == "MaxSust"){HarvLim1 <- HarvLimX * 1.2}
+        if(harvScen == "NoHarv"){
+          HarvLim1 <- HarvLimX * 0.
+          initPrebas$ClCut = initPrebas$defaultThin = rep(0,nSample)
+          harvInten = harvScen
+        }
+      }else{
+        roundWood <- HarvLim1 * roundTotWoodRatio
+        enWood <- HarvLim1 - roundWood
+        HarvLim1 <- cbind(roundWood,enWood)
       }
-    }else{
-      roundWood <- HarvLim1 * roundTotWoodRatio
-      enWood <- HarvLim1 - roundWood
-      HarvLim1 <- cbind(roundWood,enWood)
     }
   }else{
     HarvLim1 <- HarvLimMaak*1000*sum(areas)/sum(data.all$area)
@@ -406,11 +408,12 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   
   print(paste0("harvest scenario ", harvScen))
   print(paste0("harvest intensity ", harvInten))
-  if(nrow(HarvLim1)<nYears){
-    HarvLim1<-rbind(HarvLim1,matrix(HarvLim1[nrow(HarvLim1),],(nYears-nrow(HarvLim1)),ncol(HarvLim1),byrow = T))
+  if(!harvScen%in%c("Powerline_under","Powerline_border")){
+    if(nrow(HarvLim1)<nYears){
+      HarvLim1<-rbind(HarvLim1,matrix(HarvLim1[nrow(HarvLim1),],(nYears-nrow(HarvLim1)),ncol(HarvLim1),byrow = T))
+    }
+    HarvLimX <- HarvLim1[1:nYears,]
   }
-  HarvLimX <- HarvLim1[1:nYears,]
-  
   if(harvScen %in% c("adapt","adaptNoAdH","adaptTapio")){
     if(harvScen=="adaptNoAdH"){
       compHarvX=0.
@@ -680,13 +683,14 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   if(outType=="hiiliKartta"){
     
     V <- apply(region$multiOut[1:nSitesRun0,,"V",,1],1:2,"sum")
-    #print(V[1,1:10])
+    print(V[1,1:40])
     agesEnd <- region$multiOut[1:nSitesRun0,nYears,"age",,1]
     ageCols <- 1
     if(!is.null(dim(agesEnd))){
       ageCols <- which(colMeans(agesEnd)>0)
     }
     H <- apply(region$multiOut[1:nSitesRun0,,"H",ageCols,1],1:2,"mean")
+    print(H[1,1:40])
     age <- apply(region$multiOut[1:nSitesRun0,,"age",ageCols,1],1:2,"mean")
     nep <- apply(region$multiOut[1:nSitesRun0,,"NEP/SMI[layer_1]",,1],1:2,"sum")
     wTot <- apply(region$multiOut[1:nSitesRun0,,c(24,25,31,32,33),,1],1:2,"sum")
@@ -2425,7 +2429,47 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
       P0currclim <- as.vector(mean(P0currclim)*array(1,c(1,length(clim$id))))
       fT0 <- as.vector(mean(fT0)*array(1,c(1,length(clim$id))))
     }
-    initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),siteInfo=siteInfo,
+    if(harvScen%in%c("Powerline_under","Powerline_border")){
+      print("Init for powerline cases")
+      Ageclearcut = Hclearcut = Dclearcut = rep(NA,nSites) 
+      fixAinit <- rep(0,nSites)
+      powerlinesites <- 1:nSites
+      if(harvScen=="Powerline_under"){
+        Ageclearcut[powerlinesites] <- 8
+        Hclearcut[powerlinesites] <- 3
+      } else {
+        Ageclearcut[powerlinesites] <- 25
+        Hclearcut[powerlinesites] <- 10
+      }
+      Dclearcut[powerlinesites] <- 999 #just a big number
+      fixAinit[powerlinesites] <- 3 ### let's discuss about this on tuesday
+      initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),siteInfo=siteInfo,
+                                  latitude = lat,
+                                  fixAinit = fixAinit,
+                                  inDclct = Dclearcut,
+                                  inHclct = Hclearcut,
+                                  inAclct = Ageclearcut,
+                                  pCROBAS = pCrobasX,
+                                  ECMmod = 1,
+                                  #defaultThin = defaultThin,
+                                  #ClCut = ClCut, 
+                                  alpharNcalc = T,
+                                  areas =areas,
+                                  ingrowth = ingrowth,
+                                  #energyCut = energyCut, 
+                                  ftTapioPar = ftTapioParX,
+                                  tTapioPar = tTapioParX,
+                                  multiInitVar = as.array(initVar),
+                                  PAR = clim$PAR[, 1:(nYears*365)],
+                                  TAir=clim$TAir[, 1:(nYears*365)],
+                                  VPD=clim$VPD[, 1:(nYears*365)],
+                                  Precip=clim$Precip[, 1:(nYears*365)],
+                                  CO2=clim$CO2[, 1:(nYears*365)],
+                                  yassoRun = 1,
+                                  mortMod = mortMod
+                                  p0currClim = P0currclim, fT0AvgCurrClim = fT0)
+      } else {
+        initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),siteInfo=siteInfo,
                                 latitude = lat,
                                 pCROBAS = pCrobasX,
                                 pCN_alfar = parsCN_new_alfar,
@@ -2448,6 +2492,7 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
                                 yassoRun = 1,
                                 mortMod = mortMod,
                                 p0currClim = P0currclim, fT0AvgCurrClim = fT0)
+      }
   } else {
     #    save(nYears,nSites,siteInfo,lat,pCrobasX,defaultThin,ClCut,areas,energyCut,ftTapioParX,tTapioParX,initVar,clim,mortMod, file=paste0("testDataInit","master",".rdata"))
     #    print("data saved")
