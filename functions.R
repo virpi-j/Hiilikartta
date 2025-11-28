@@ -686,6 +686,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     if(!is.null(dim(agesEnd))){
       ageCols <- which(colMeans(agesEnd)>0)
     }
+    H <- apply(region$multiOut[1:nSitesRun0,,"H",ageCols,1],1:2,"mean")
     age <- apply(region$multiOut[1:nSitesRun0,,"age",ageCols,1],1:2,"mean")
     nep <- apply(region$multiOut[1:nSitesRun0,,"NEP/SMI[layer_1]",,1],1:2,"sum")
     wTot <- apply(region$multiOut[1:nSitesRun0,,c(24,25,31,32,33),,1],1:2,"sum")
@@ -707,11 +708,11 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
       reStartMod$GVout <- region$GVout[1:nSitesRun0,yearsToMem,]
       reStartMod$multiOut <- region$multiOut[1:nSitesRun0,yearsToMem,,,]
       reStartSoil = region$soilC[1:nSitesRun0,yearsToMem,,,]
-      out <- list(V, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, reStartMod,reStartSoil, clim)
-      names(out) <- c("V", "age", "nep", "wTot", "wGV", "soilC", "litters","Vpine", "Vspruce", "Vbirch","restartMod","reStartSoil","clim")
+      out <- list(V, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, reStartMod,reStartSoil, clim)
+      names(out) <- c("V", "H", "age", "nep", "wTot", "wGV", "soilC", "litters","Vpine", "Vspruce", "Vbirch","restartMod","reStartSoil","clim")
     } else {
-      out <- list(V, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch)
-      names(out) <- c("V", "age", "nep", "wTot", "wGV","soilC", "litters","Vpine", "Vspruce", "Vbirch")
+      out <- list(V, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch)
+      names(out) <- c("V", "H", "age", "nep", "wTot", "wGV","soilC", "litters","Vpine", "Vspruce", "Vbirch")
     }
     
     return(out)

@@ -2,7 +2,6 @@
 #gc()
 if(length(dev.list())>0) dev.off()
 print(paste("region",r_no))
-toFile <- F
 set.seed(1)
 setwd(projDir)
 #source("/scratch/project_2000994/PREBASruns/PREBAStesting/localSettins.R",local=T)
@@ -159,7 +158,6 @@ soiltype0 <- 1 # soiltypes (mineral soils, spruce mire, pine mire, ombrotrophic 
 
 harvSceni <- "NoHarv"
 #harvScens <- c("NoHarv","Mitigation","BaseLow","adapt","baseTapio", "Base")
-harvScens <- c("NoHarv","baseTapio","Powerline_under","Powerline_border")
 ferti <- 1
 speciesSeti <- 1
 speciesName <- speciesNames[speciesSeti]
@@ -173,21 +171,27 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
   } else if(harvSceni=="NoHarv"){ 
     harvInten <- "NoHarv"
     harvScen <- "NoHarv"
+  } else if (harvSceni%in%c("Powerline_under","Powerline_border")) { 
+    harvScen <- harvSceni
+    harvInten <- "Low"
+    initAges <- NA
+    ingrowth <- F
   } else { 
     harvScen <- harvSceni
     harvInten <- "Low"
   }
   print(paste(harvScen,"/",harvInten))
-  n0only <- F
-  if(harvSceni%in%c("NoHarv","baseTapio")) n0only <- T
+  n0only <- F # T if run only modified segments (no dependence on harvest rate in other segments)
+  if(harvSceni%in%c("NoHarv","baseTapio","Powerline_under","Powerline_border")) n0only <- T
   print(paste("Species",speciesName,"run..."))
-  ferti <- 1
+  inAs <- c(0,yearsToMem)
+  if(harvSceni%in%c("Powerline_under","Powerline_border")) inAs <- 0
   for(ferti in 1:fertmax){
     ferti <<- ferti # make global
     print(paste(harvScen,"/",harvInten,"/ fert =",ferti))
     time0 <- Sys.time()
     outputAgei <-list()
-    initAges <- c(NA,yearsToMem)
+    if(!harvSceni%in%c("Powerline_under","Powerline_border")) initAges <- c(NA,yearsToMem)
     init0 <- 1
     #if(ingrowth){ 
     #  initAges <- c(NA, NA,yearsToMem) #
@@ -291,13 +295,14 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
       rm(list=setdiff(ls(),c(toMem,"out")))
       
       #if(initAgei>1){
-      V <- litters <- age <- nep <- wTot <- wGV <- soilC <- Vpine <- Vspruce <- Vbirch <-
+      V <- litters <- H <- age <- nep <- wTot <- wGV <- soilC <- Vpine <- Vspruce <- Vbirch <-
         array(0,c(nSitesRun0,nYears,length(sampleIDs)),
               dimnames = list(paste0("site",1:nSitesRun0),
                               2014+1:nYears,
                               climMod[sampleIDs]))
       for(ij in 1:length(out)){
         V[,,ij] <- out[[ij]]$V
+        H[,,ij] <- out[[ij]]$H
         age[,,ij] <- out[[ij]]$age
         nep[,,ij] <- out[[ij]]$nep
         wTot[,,ij] <- out[[ij]]$wTot
@@ -308,8 +313,8 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         Vspruce[,,ij] <- out[[ij]]$Vspruce
         Vbirch[,,ij] <- out[[ij]]$Vbirch
       }
-      outputAgei[[initAgei]] <- list(V, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch)
-      names(outputAgei[[initAgei]]) <- c("V", "age", "nep", "wTot", "wGV", "soilC", "litters", "Vpine", "Vspruce", "Vbirch")
+      outputAgei[[initAgei]] <- list(V, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch)
+      names(outputAgei[[initAgei]]) <- c("V", "H", "age", "nep", "wTot", "wGV", "soilC", "litters", "Vpine", "Vspruce", "Vbirch")
       print(Sys.time()-time0)
       plot(V[1,,1],type="l", ylim = c(-0.5, max(V)),main=paste("fert",ferti))
       lines(Vpine[1,,1],col="red")
@@ -330,13 +335,13 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
   #if(is.na(initAge)) initAge <- 0
   outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
                      "_species",speciesName,".pdf")
-  pdf(outFilee)
+  if(toFile) pdf(outFilee)
   for(ij in 1:length(output[[1]][[1]])){
     par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
     ymax <- max(output[[1]][[1]][[ij]])
     ymin <- min(output[[1]][[1]][[ij]])
     for(ferti in 1:fertmax){
-      for(agei in 1:length(c(0,yearsToMem))){
+      for(agei in 1:length(inAs)){
         ymax <- max(ymax,max(colMeans(output[[ferti]][[agei]][[ij]])))
         ymin <- min(ymin,min(colMeans(output[[ferti]][[agei]][[ij]])))
       }
@@ -345,7 +350,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
     
     ageplot <- F
     if(ageplot){
-      for(agei in 1:length(c(0,yearsToMem))){
+      for(agei in 1:length(inAs)){
         par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
         for(ferti in 1:fertmax){
           if(names(output[[ferti]][[agei]])[ij]!="age"){
@@ -357,7 +362,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
             agemean <- apply(output[[ferti]][[agei]]$age,2,mean)
             plot(agemean,xmean,xlab="age",ylab=names(output[[ferti]][[agei]])[ij],
                  type="l",ylim=ylims,lwd=2,
-                 main=paste("fert =",ferti,"init year",c(0,yearsToMem)[agei]))
+                 main=paste("fert =",ferti,"init year",inAs[agei]))
             for(ik in sampleIDs){ # go through climate models
               #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
               lines(ages[,ik],xi[,ik],col="blue")
@@ -367,7 +372,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         }
       }
     }
-    for(agei in 1:length(c(0,yearsToMem))){
+    for(agei in 1:length(inAs)){
       for(ferti in 1:fertmax){
         tmp <- output[[ferti]][[agei]][[ij]]
         xi <- apply(tmp,2:3,mean)
@@ -375,7 +380,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         time <- 1:ncol(output[[ferti]][[agei]][[ij]])
         plot(time,xmean,xlab="time",ylab=names(output[[ferti]][[agei]])[ij],
              type="l",ylim=ylims,lwd=2,
-             main=paste("fert =",ferti,"init year",c(0,yearsToMem)[agei]))
+             main=paste("fert =",ferti,"init year",inAs[agei]))
         for(ik in sampleIDs){ # go through climate models
           #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
           lines(time,xi[,ik],col="blue")
@@ -384,7 +389,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
       }
     }
   }
-  dev.off()
+  if(toFile) dev.off()
   outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
                      "_species",speciesName,".rdata")
   save(output,file=outFilee)
@@ -456,20 +461,20 @@ if(FALSE){
       #if(is.na(initAge)) initAge <- 0
       outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
                        "_species",which(species>0),".pdf")
-      pdf(outFilee)
+      if(toFile) pdf(outFilee)
       par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
       for(ij in 1:length(output[[1]][[1]])){
         ymax <- max(output[[1]][[1]][[ij]])
         ymin <- min(output[[1]][[1]][[ij]])
         for(ferti in 1:fertmax){
-          for(agei in 1:length(c(0,yearsToMem))){
+          for(agei in 1:length(inAs)){
             ymax <- max(ymax,max(colMeans(output[[ferti]][[agei]][[ij]])))
             ymin <- min(ymin,min(colMeans(output[[ferti]][[agei]][[ij]])))
           }
         }
         ylims <- c(ymin,ymax)
         
-        for(agei in 1:length(c(0,yearsToMem))){
+        for(agei in 1:length(inAs)){
           for(ferti in 1:fertmax){
             if(names(output[[ferti]][[agei]])[ij]!="age"){
               tmp <- output[[ferti]][[agei]][[ij]]
@@ -480,7 +485,7 @@ if(FALSE){
               agemean <- apply(output[[ferti]][[agei]]$age,2,mean)
               plot(agemean,xmean,xlab="age",ylab=names(output[[ferti]][[agei]])[ij],
                    type="l",ylim=ylims,lwd=2,
-                   main=paste("fert =",ferti,"init year",c(0,yearsToMem)[agei]))
+                   main=paste("fert =",ferti,"init year",inAs[agei]))
               for(ik in sampleIDs){ # go through climate models
                 #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
                 lines(ages[,ik],xi[,ik],col="blue")
@@ -489,7 +494,7 @@ if(FALSE){
             }
           }
         }
-        for(agei in 1:length(c(0,yearsToMem))){
+        for(agei in 1:length(inAs)){
           for(ferti in 1:fertmax){
             tmp <- output[[ferti]][[agei]][[ij]]
             xi <- apply(tmp,2:3,mean)
@@ -497,7 +502,7 @@ if(FALSE){
             time <- 1:ncol(output[[ferti]][[agei]][[ij]])
             plot(time,xmean,xlab="time",ylab=names(output[[ferti]][[agei]])[ij],
                  type="l",ylim=ylims,lwd=2,
-                 main=paste("fert =",ferti,"init year",c(0,yearsToMem)[agei]))
+                 main=paste("fert =",ferti,"init year",inAs[agei]))
             for(ik in sampleIDs){ # go through climate models
               #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
               lines(time,xi[,ik],col="blue")
@@ -506,7 +511,7 @@ if(FALSE){
           }
         }
       }
-      dev.off()
+      if(toFile) dev.off()
     }    
   }
 }  
