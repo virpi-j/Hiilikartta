@@ -683,14 +683,14 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   if(outType=="hiiliKartta"){
     
     V <- apply(region$multiOut[1:nSitesRun0,,"V",,1],1:2,"sum")
-    print(V[1,1:40])
+    #print(V[1,1:40])
     agesEnd <- region$multiOut[1:nSitesRun0,nYears,"age",,1]
     ageCols <- 1
     if(!is.null(dim(agesEnd))){
       ageCols <- which(colMeans(agesEnd)>0)
     }
     H <- apply(region$multiOut[1:nSitesRun0,,"H",ageCols,1],1:2,"mean")
-    print(H[1,1:40])
+    #print(H[1,1:40])
     age <- apply(region$multiOut[1:nSitesRun0,,"age",ageCols,1],1:2,"mean")
     nep <- apply(region$multiOut[1:nSitesRun0,,"NEP/SMI[layer_1]",,1],1:2,"sum")
     wTot <- apply(region$multiOut[1:nSitesRun0,,c(24,25,31,32,33),,1],1:2,"sum")
@@ -2429,12 +2429,12 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
       P0currclim <- as.vector(mean(P0currclim)*array(1,c(1,length(clim$id))))
       fT0 <- as.vector(mean(fT0)*array(1,c(1,length(clim$id))))
     }
-    if(harvScen%in%c("Powerline_under","Powerline_border")){
+    if(harv%in%c("Powerline_under","Powerline_border")){
       print("Init for powerline cases")
       Ageclearcut = Hclearcut = Dclearcut = rep(NA,nSites) 
       fixAinit <- rep(0,nSites)
       powerlinesites <- 1:nSites
-      if(harvScen=="Powerline_under"){
+      if(harv=="Powerline_under"){
         Ageclearcut[powerlinesites] <- 8
         Hclearcut[powerlinesites] <- 3
       } else {
@@ -2466,7 +2466,7 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
                                   Precip=clim$Precip[, 1:(nYears*365)],
                                   CO2=clim$CO2[, 1:(nYears*365)],
                                   yassoRun = 1,
-                                  mortMod = mortMod
+                                  mortMod = mortMod,
                                   p0currClim = P0currclim, fT0AvgCurrClim = fT0)
       } else {
         initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),siteInfo=siteInfo,
@@ -2498,12 +2498,12 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
     #    print("data saved")
     
     print("run initPrebas")
-    if(harvScen%in%c("Powerline_under","Powerline_border")){
+    if(harv%in%c("Powerline_under","Powerline_border")){
       print("Init for powerline cases")
       Ageclearcut = Hclearcut = Dclearcut = rep(NA,nSites) 
       fixAinit <- rep(0,nSites)
       powerlinesites <- 1:nSites
-      if(harvScen=="Powerline_under"){
+      if(harv=="Powerline_under"){
         Ageclearcut[powerlinesites] <- 8
         Hclearcut[powerlinesites] <- 3
       } else {

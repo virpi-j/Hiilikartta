@@ -162,6 +162,7 @@ ferti <- 1
 speciesSeti <- 1
 speciesName <- speciesNames[speciesSeti]
 runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
+  ingrowth <- T
   if(harvSceni=="Base"){ 
     harvInten <- "Base"
     harvScen <- "Base"
