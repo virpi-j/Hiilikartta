@@ -316,10 +316,14 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
       outputAgei[[initAgei]] <- list(V, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch)
       names(outputAgei[[initAgei]]) <- c("V", "H", "age", "nep", "wTot", "wGV", "soilC", "litters", "Vpine", "Vspruce", "Vbirch")
       print(Sys.time()-time0)
-      plot(V[1,,1],type="l", ylim = c(-0.5, max(V)),main=paste("fert",ferti))
+      par(mfrow=c(2,1))
+      plot(V[1,,1],type="l", ylim = c(-0.5, max(V)),ylab="V_i", xlab="time", 
+           main=paste("fert",ferti))
       lines(Vpine[1,,1],col="red")
       lines(Vspruce[1,,1],col="blue")
       lines(Vbirch[1,,1],col="green")
+      plot(H[1,,1],type="l", ylim = c(-0.5, max(H)),ylab="H_i", xlab="time",
+           main=paste("fert",ferti))
       #}
     }
     output[[ferti]] <- outputAgei
