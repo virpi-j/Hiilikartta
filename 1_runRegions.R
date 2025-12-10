@@ -8,7 +8,7 @@ setwd(projDir)
 
 if(!exists("nSitesRun")) nSitesRun <-10000
 nSitesRun0 <- 100
-fertmax <- 5 # max fert type
+fertmax <- fertmax0 <- 5 # max fert type
 if(testaus){
   nSitesRun <-100
   nSitesRun0 <- 10
@@ -112,15 +112,21 @@ ages <- data.all[,"age"]
 tmps <- data.all[,c("pine","spruce","birch","fert","age","ba")]
 tmp <- tmps[,1:3]/rowSums(tmps[,1:3])
 tmp[rowSums(tmps)==0,]<-0
-nsets <- 7
+nsets <- 8
 
 speciess <- array(0,c(nSitesRun0,3,nsets,fertmax),
                   dimnames = list(1:nSitesRun0,c("pine","spruce","birch"),  
-                                  c("pinedom","sprucedom","birchdom",
+                                  c("typical","pinedom","sprucedom","birchdom",
                                     "pinebirch","sprucebirch","sprucepine","sprucepinebirch"),
                                   paste0("fert",1:fertmax)))
 
+# typical forest in region
+typical <- tmps[sample(1:nrow(tmps),size = nSitesRun0, replace = T),]
+ferttypical <- typical$fert
+
 for(ferti in 1:fertmax){
+  # typical forest in region
+  speciess[,,"typical",ferti] <- as.matrix(typical[,1:3])
   # pine dominated
   pinedom <- tmps[which(tmp$pine>0.5 & tmps$fert==ferti),]
   pinedom <- pinedom[sample(1:nrow(pinedom),size = nSitesRun0, replace = T),1:3]
@@ -187,6 +193,9 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
   print(paste("Species",speciesName,"run..."))
   inAs <- c(0,yearsToMem)
   if(harvSceni%in%c("Powerline_under","Powerline_border")) inAs <- 0
+  fertmax <- fertmax0
+  if(speciesName=="typical"){ 
+    fertmax <- 1 } 
   for(ferti in 1:fertmax){
     ferti <<- ferti # make global
     print(paste(harvScen,"/",harvInten,"/ fert =",ferti))
@@ -218,7 +227,11 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         dataS$spruce[1:nSitesRun0] <- speciess[,"spruce",speciesSeti,ferti]#simInitData$spruce
         dataS$birch[1:nSitesRun0] <- 0*speciess[,"birch",speciesSeti,ferti]# simInitData$birch
         dataS$decid[1:nSitesRun0] <- speciess[,"birch",speciesSeti,ferti]#simInitData$decid
-        dataS$fert[1:nSitesRun0] <- simInitData$fert
+        if(speciesName=="typical"){
+          dataS$fert[1:nSitesRun0] <- ferttypical          
+        } else {
+          dataS$fert[1:nSitesRun0] <- simInitData$fert
+        }
         dataS$h[1:nSitesRun0] <- simInitData$h
         dataS$minpeat[1:nSitesRun0] <- simInitData$minpeat
         dataS$landclass[1:nSitesRun0] <- simInitData$landclass
