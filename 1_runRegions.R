@@ -216,7 +216,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         dataS$dbh[1:nSitesRun0] <- simInitData$dbh
         dataS$pine[1:nSitesRun0] <- speciess[,"pine",speciesSeti,ferti]#simInitData$pine
         dataS$spruce[1:nSitesRun0] <- speciess[,"spruce",speciesSeti,ferti]#simInitData$spruce
-        dataS$birch[1:nSitesRun0] <-speciess[,"birch",speciesSeti,ferti]# simInitData$birch
+        dataS$birch[1:nSitesRun0] <- 0*speciess[,"birch",speciesSeti,ferti]# simInitData$birch
         dataS$decid[1:nSitesRun0] <- speciess[,"birch",speciesSeti,ferti]#simInitData$decid
         dataS$fert[1:nSitesRun0] <- simInitData$fert
         dataS$h[1:nSitesRun0] <- simInitData$h
@@ -404,7 +404,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
 }
 ###########
 ij <- 1
-for(ij in 1:nrow(speciess)){
+for(ij in 1:nsets){
   #species <<- speciess[ij,]
   speciesName <<- speciesNames[ij]
   runOut <- lapply(harvScens[1], function(jx) {
