@@ -50,6 +50,7 @@ nn0 <- order(data.all$age)[1:nSitesRun0] # The youngest segments to test set
 nn1 <- sample(setdiff(1:dim(data.all)[1],nn0), nSitesRun - nSitesRun0)
 dataS <- data.all[c(nn0,nn1),]
 
+print(paste("Region",regnames[r_no]))
 load(paste0("/scratch/project_2000994/PREBASruns/finRuns/input/maakunta/maakunta_",r_no,"_IDsTab.rdata"))
 data.IDs <- data.IDs[segID!=0]
 data.IDs$segID <- data.IDs$maakuntaID
