@@ -310,7 +310,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   ## Assign harvesting quota for the region based on volume (in NFI startingYear) and MELA
   if(regSets!="maakunta"){
     Region = nfiareas[ID==r_no, Region]
-    if(harvScen=="NoHarv"){
+    if(harvScen%in%c("NoHarv","kitu")){
       initPrebas$ClCut = initPrebas$defaultThin = rep(0,nSample)
       HarvLim1 = 0
       harvInten = "NoHarv"
@@ -542,7 +542,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   ###run yasso (starting from steady state) using PREBAS litter
   if(harvScen=="Base" & harvInten =="Base" & initilizeSoil & rcps=="CurrClim"){
     initSoilC <- stXX_GV(region, 1)
-    print(paste("initSoilC"))
+    print("save initSoilC...")
     save(initSoilC,file=paste0("initSoilCunc/forCent",r_no,"/initSoilC.rdata"))
     print(paste0("initsoil saved"))
     
@@ -705,6 +705,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     #print(Vpine[1:3,1:8])
     Vspruce <- as.matrix((vSpFun(region,SpID=2)[,-1]))    
     Vbirch <- as.matrix((vSpFun(region,SpID=3)[,-1]))    
+    grossGrowth <- apply(region$multiOut[1:nSitesRun0,,"grossGrowth",,1],1:2,"sum")
     
     if(harvScen=="NoHarv" & is.na(initAge) & !ingrowth){
       print("Save init states for ages ");print(yearsToMem)
@@ -712,11 +713,12 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
       reStartMod$GVout <- region$GVout[1:nSitesRun0,yearsToMem,]
       reStartMod$multiOut <- region$multiOut[1:nSitesRun0,yearsToMem,,,]
       reStartSoil = region$soilC[1:nSitesRun0,yearsToMem,,,]
-      out <- list(V, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, reStartMod,reStartSoil, clim)
-      names(out) <- c("V", "H", "age", "nep", "wTot", "wGV", "soilC", "litters","Vpine", "Vspruce", "Vbirch","restartMod","reStartSoil","clim")
+      out <- list(V, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, grossGrowth, reStartMod,reStartSoil, clim)
+      names(out) <- c("V", "H", "age", "nep", "wTot", "wGV", "soilC", "litters","Vpine", "Vspruce", "Vbirch","grossGrowth","restartMod","reStartSoil","clim")
     } else {
-      out <- list(V, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch)
-      names(out) <- c("V", "H", "age", "nep", "wTot", "wGV","soilC", "litters","Vpine", "Vspruce", "Vbirch")
+      out <- list(V, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch,grossGrowth)
+      names(out) <- c("V", "H", "age", "nep", "wTot", "wGV","soilC", "litters",
+                      "Vpine", "Vspruce", "Vbirch","grossGrowth")
     }
     
     return(out)
@@ -925,7 +927,15 @@ create_prebas_input.f = function(r_no, clim, data.sample, nYears,
   siteInfo[,1] <- data.sample$segID
   siteInfo[,2] <- as.numeric(data.sample[,id])
   siteInfo[,3] <- data.sample[,fert]
-  
+
+  poorlyprodMod <- T
+  if(poorlyprodMod){
+    print("Set soil properties for poorly prod areas.")
+    print(length(which(data.sample$landclass==2)))
+    siteInfo[which(data.sample$landclass==2),10] <- 1
+    siteInfo[which(data.sample$landclass==2),11] <- 0.01
+    siteInfo[which(data.sample$landclass==2),12] <- 0.01
+  }
   # litterSize <- matrix(0,3,3)
   # litterSize[1,1:2] <- 30
   # litterSize[1,3] <- 10
@@ -2209,7 +2219,14 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
   siteInfo[,1] <- data.sample$segID
   siteInfo[,2] <- as.numeric(data.sample[,id])
   siteInfo[,3] <- data.sample[,fert]
-  
+  poorlyprodMod <- T
+  if(poorlyprodMod){
+    print("Set soil properties for poorly prod areas.")
+    #print(length(which(data.sample$landclass==2)))
+    siteInfo[which(data.sample$landclass==2),10] <- 0.1
+    siteInfo[which(data.sample$landclass==2),11] <- 0.01
+    siteInfo[which(data.sample$landclass==2),12] <- 0.01
+  }
   # litterSize <- matrix(0,3,3)
   # litterSize[1,1:2] <- 30
   # litterSize[1,3] <- 10

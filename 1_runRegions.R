@@ -10,10 +10,10 @@ if(!exists("nSitesRun")) nSitesRun <-10000
 nSitesRun0 <- 100
 fertmax <- fertmax0 <- 5 # max fert type
 if(testaus){
-  nSitesRun <-100
-  nSitesRun0 <- 10
+  nSitesRun <-2000
+  nSitesRun0 <- 100
   fertmax <- 5 # max fert type
-  yearsToMem <- c(30,50)
+  yearsToMem <- c(30,50,70)
 }
 CSCrun <- T
 #vPREBAS <- "newVersion"
@@ -85,6 +85,7 @@ if(manualRun){
   RCP=0
   harvScen <- "Base"
   harvInten <- "Base"
+  rcps<-"CurrClim"
   easyInit=FALSE; forceSaveInitSoil=F; cons10run = F
   procDrPeat=F; coeffPeat1=-240; coeffPeat2=70
   coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077#g m-2 y-1
@@ -93,14 +94,17 @@ if(manualRun){
   sampleX = dataS; P0currclim=NA; fT0=NA
   climdata=NULL
   sampleID = 1; initAge=NA
-  #harvScen <- "Powerline_under"
+  sampleX <- dataS
 }
 
 # initialize 
-print(paste("Run initialization for region",r_no,", sample size",nSitesRun))
+print(paste("Run initialization for region",r_no,", sample size",nSitesRun,"..."))
 out <- runModel(1,sampleX = dataS, harvScen="Base",harvInten="Base",rcps="CurrClim",RCP=0, outType = outType)
+print("done.")
 clim <- out$clim
-
+#colMeans(apply(out$region$multiOut[which(dataS$landclass==2),1:10,"grossGrowth",,1],1:2,sum))
+#colMeans(apply(out$region$multiOut[which(dataS$landclass==1),1:10,"soilC",,1],1:2,sum))
+#colMeans(apply(out$region$multiOut[which(dataS$landclass==2),1:10,"soilC",,1],1:2,sum))
 CoeffSim <- T
 ferti <- 1
 dataSorig <- dataS
@@ -110,14 +114,15 @@ endingYear = 2100
 nYears = endingYear-startingYear
 
 ages <- data.all[,"age"]
-tmps <- data.all[,c("pine","spruce","birch","fert","age","ba")]
+tmps <- data.all[,c("pine","spruce","birch","fert","age","ba","landclass")]
 tmp <- tmps[,1:3]/rowSums(tmps[,1:3])
 tmp[rowSums(tmps)==0,]<-0
-nsets <- 8
+#tmps[,1:3] <- tmp
+nsets <- 9
 
 speciess <- array(0,c(nSitesRun0,3,nsets,fertmax),
                   dimnames = list(1:nSitesRun0,c("pine","spruce","birch"),  
-                                  c("typical","pinedom","sprucedom","birchdom",
+                                  c("typical","kitu","pinedom","sprucedom","birchdom",
                                     "pinebirch","sprucebirch","sprucepine","sprucepinebirch"),
                                   paste0("fert",1:fertmax)))
 
@@ -125,9 +130,16 @@ speciess <- array(0,c(nSitesRun0,3,nsets,fertmax),
 typical <- tmps[sample(1:nrow(tmps),size = nSitesRun0, replace = T),]
 ferttypical <- typical$fert
 
+# typical kitumaa/poorly productive forest in region
+kitu <- tmps[sample(which(data.all$landclass==2),nSitesRun0, replace = T),]
+kitu$fert[which(kitu$fert<5)] <- 5
+fertkitu <- kitu$fert
+
 for(ferti in 1:fertmax){
   # typical forest in region
   speciess[,,"typical",ferti] <- as.matrix(typical[,1:3])
+  # typical forest in region
+  speciess[,,"kitu",ferti] <- as.matrix(kitu[,1:3])
   # pine dominated
   pinedom <- tmps[which(tmp$pine>0.5 & tmps$fert==ferti),]
   pinedom <- pinedom[sample(1:nrow(pinedom),size = nSitesRun0, replace = T),1:3]
@@ -166,96 +178,105 @@ soiltype0 <- 1 # soiltypes (mineral soils, spruce mire, pine mire, ombrotrophic 
 harvSceni <- harvScens[1] #"NoHarv"
 #harvScens <- c("NoHarv","Mitigation","BaseLow","adapt","baseTapio", "Base")
 ferti <- 1
-speciesSeti <- 1
+speciesSeti <- 2
 speciesName <- speciesNames[speciesSeti]
 runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
-  ingrowth <- T
-  if(harvSceni=="Base"){ 
-    harvInten <- "Base"
-    harvScen <- "Base"
-  } else if(harvSceni=="BaseLow"){ 
-    harvScen <- "Base"
-    harvInten <- "Low"
-  } else if(harvSceni=="NoHarv"){ 
-    harvInten <- "NoHarv"
-    harvScen <- "NoHarv"
-  } else if (harvSceni%in%c("Powerline_under","Powerline_border")) { 
-    harvScen <- harvSceni
-    harvInten <- "Low"
-    initAges <- NA
-    ingrowth <- F
-  } else { 
-    harvScen <- harvSceni
-    harvInten <- "Low"
-  }
-  print(paste(harvScen,"/",harvInten))
-  n0only <- F # T if run only modified segments (no dependence on harvest rate in other segments)
-  if(harvSceni%in%c("NoHarv","baseTapio","Powerline_under","Powerline_border")) n0only <- T
-  print(paste("Species",speciesName,"run..."))
-  inAs <- c(0,yearsToMem)
-  if(harvSceni%in%c("Powerline_under","Powerline_border")) inAs <- 0
-  fertmax <- fertmax0
-  if(speciesName=="typical"){ 
-    fertmax <- 1 } 
-  for(ferti in 1:fertmax){
-    ferti <<- ferti # make global
-    print(paste(harvScen,"/",harvInten,"/ fert =",ferti))
-    time0 <- Sys.time()
-    outputAgei <-list()
-    if(!harvSceni%in%c("Powerline_under","Powerline_border")) initAges <- c(NA,yearsToMem)
-    init0 <- 1
-    #if(ingrowth){ 
-    #  initAges <- c(NA, NA,yearsToMem) #
+  if((speciesSeti==2 & harvSceni=="NoHarv") | speciesSeti!=2){
+    ingrowth <- T
+    if(harvSceni=="Base"){ 
+      harvInten <- "Base"
+      harvScen <- "Base"
+    } else if(harvSceni=="BaseLow"){ 
+      harvScen <- "Base"
+      harvInten <- "Low"
+    } else if(harvSceni%in%c("NoHarv")){ 
+      harvInten <- "NoHarv"
+      harvScen <- "NoHarv"
+      if(speciesName=="kitu"){
+        initAges <- NA
+      }
+    } else if (harvSceni%in%c("Powerline_under","Powerline_border")) { 
+      harvScen <- harvSceni
+      harvInten <- "Low"
+      initAges <- NA
+      ingrowth <- F
+    } else { 
+      harvScen <- harvSceni
+      harvInten <- "Low"
+    }
+    print(paste(harvScen,"/",harvInten))
+    n0only <- F # T if run only modified segments (no dependence on harvest rate in other segments)
+    if(harvSceni%in%c("NoHarv","baseTapio","Powerline_under","Powerline_border")) n0only <- T
+    print(paste("Species",speciesName,"run..."))
+    inAs <- c(0,yearsToMem)
+    if(harvSceni%in%c("Powerline_under","Powerline_border")) inAs <- 0
+    if(speciesName=="kitu") inAs <- 0
+    fertmax <- fertmax0
+    if(speciesName%in%c("typical","kitu")){ 
+      fertmax <- 1 } 
+    for(ferti in 1:fertmax){
+      ferti <<- ferti # make global
+      print(paste(speciesName,"/",harvScen,"/",harvInten,"/ fert =",ferti))
+      time0 <- Sys.time()
+      outputAgei <-list()
+      if(!(harvSceni%in%c("Powerline_under","Powerline_border") | speciesName=="kitu")) initAges <- c(NA,yearsToMem)
+      init0 <- 1
+      #if(ingrowth){ 
+      #  initAges <- c(NA, NA,yearsToMem) #
       #init0 <- 0
-    #}
-    initAgei <- init0
-    for(initAgei in init0:length(initAges)){ # 50#NA
-      initAge <- initAges[initAgei]
-      #if(initAgei==0){ 
-      #  initAge <- NA
-      #} else {initAge <- c(NA,yearsToMem)[initAgei]}
-      toMem <- ls()
-      dataS <- dataSorig
-      if(CoeffSim){
-        simInitData <- data.table(ba = 0.01, age = 0, dbh = 0.01, pine = 1, 
-                                  spruce =  1, birch =  1, #decid =  species[4], 
-                                  fert = ferti, h = 1.35, minpeat = minpeat0,
-                                  landclass = landclass0, cons = 0)
-        dataS$ba[1:nSitesRun0] <- simInitData$ba
-        dataS$age[1:nSitesRun0] <- simInitData$age
-        dataS$dbh[1:nSitesRun0] <- simInitData$dbh
-        dataS$pine[1:nSitesRun0] <- speciess[,"pine",speciesSeti,ferti]#simInitData$pine
-        dataS$spruce[1:nSitesRun0] <- speciess[,"spruce",speciesSeti,ferti]#simInitData$spruce
-        dataS$birch[1:nSitesRun0] <- 0*speciess[,"birch",speciesSeti,ferti]# simInitData$birch
-        dataS$decid[1:nSitesRun0] <- speciess[,"birch",speciesSeti,ferti]#simInitData$decid
-        if(speciesName=="typical"){
-          dataS$fert[1:nSitesRun0] <- ferttypical          
-        } else {
-          dataS$fert[1:nSitesRun0] <- simInitData$fert
+      #}
+      initAgei <- init0
+      for(initAgei in init0:length(initAges)){ # 50#NA
+        initAge <- initAges[initAgei]
+        #if(initAgei==0){ 
+        #  initAge <- NA
+        #} else {initAge <- c(NA,yearsToMem)[initAgei]}
+        toMem <- ls()
+        dataS <- dataSorig
+        if(CoeffSim){
+          simInitData <- data.table(ba = 0.01, age = 0, dbh = 0.01, pine = 1, 
+                                    spruce =  1, birch =  1, #decid =  species[4], 
+                                    fert = ferti, h = 1.35, minpeat = minpeat0,
+                                    landclass = landclass0, cons = 0)
+          nnSim <- 1:nSitesRun0
+          dataS$ba[nnSim] <- simInitData$ba
+          dataS$age[nnSim] <- simInitData$age
+          dataS$dbh[nnSim] <- simInitData$dbh
+          dataS$pine[nnSim] <- speciess[,"pine",speciesSeti,ferti]#simInitData$pine
+          dataS$spruce[nnSim] <- speciess[,"spruce",speciesSeti,ferti]#simInitData$spruce
+          dataS$birch[nnSim] <- 0*speciess[,"birch",speciesSeti,ferti]# simInitData$birch
+          dataS$decid[nnSim] <- speciess[,"birch",speciesSeti,ferti]#simInitData$decid
+          if(speciesName=="typical"){
+            dataS$fert[nnSim] <- ferttypical          
+            dataS$landclass[nnSim] <- simInitData$landclass
+          } else if(speciesName=="kitu"){
+            dataS$fert[nnSim] <- fertkitu          
+            dataS$landclass[nnSim] <- 2
+          } else {
+            dataS$fert[nnSim] <- simInitData$fert
+            dataS$landclass[nnSim] <- 1
+          }
+          
+          dataS$h[nnSim] <- simInitData$h
+          dataS$minpeat[nnSim] <- simInitData$minpeat
+          dataS$cons[nnSim] <- simInitData$cons
+          if(n0only) dataS <- dataS[nnSim,]
+          #print(head(dataS))
+          #ops <<- list(dataS)
         }
-        dataS$h[1:nSitesRun0] <- simInitData$h
-        dataS$minpeat[1:nSitesRun0] <- simInitData$minpeat
-        dataS$landclass[1:nSitesRun0] <- simInitData$landclass
-        dataS$cons[1:nSitesRun0] <- simInitData$cons
-        if(n0only) dataS <- dataS[1:nSitesRun0,]
-        #ops <<- list(dataS)
-      }
-      
-      #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
-      #source("~/Hiilikartta/functions.R", local = T)
-      if(manualRun){
-        RCP=climScen; climdata=NULL; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; outType = "hiiliKartta"; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=dataS; P0currclim=NA; fT0=NA; sampleID <- 1
-      }
-      if(initAgei==1){
+        
+        #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
+        #source("~/Hiilikartta/functions.R", local = T)
+        if(manualRun){
+          RCP=climScen; climdata=NULL; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; outType = "hiiliKartta"; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=dataS; P0currclim=NA; fT0=NA; sampleID <- 1
+        }
+        if(initAgei==1){
           out <- lapply(sampleIDs, function(jx) {
-          runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
-                   RCP = climScen, initAge = initAge, ingrowth = F, sampleX = dataS)})
-          #} else {
-          #  out <- mclapply(sampleIDs, function(jx) {
-          #    runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = outType, RCP = climScen, initAge = initAge)
-          #  }, mc.cores = nCores,mc.silent=FALSE)      
-          #}
-          if(harvSceni=="NoHarv"){ # is.na(initAge)){
+            runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
+                     RCP = climScen, initAge = initAge, ingrowth = F, sampleX = dataS)})
+          
+          #if(harvSceni=="NoHarv"){ # 
+          if(is.na(initAge)){
             multiOut <- array(0,dim = c(dim(out[[1]]$restartMod$multiOut),length(sampleIDs)))
             GVOut <- array(0,dim = c(dim(out[[1]]$restartMod$GVout),length(sampleIDs)))
             reStartSoil <- array(0,dim = c(dim(out[[1]]$reStartSoil),length(sampleIDs)))
@@ -289,6 +310,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
             print(paste("Init stages saved for ages")); print(yearsToMem)
           }
           if(ingrowth){ # if ingrowth=T run again with ingrowth
+            print("Run again with ingrowth!")
             out <- lapply(sampleIDs, function(jx) {
               print(paste("open data for clim",climModids[jx]))
               load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_climdata",r_no,"_clim",climModids[jx],".rdata"))
@@ -297,140 +319,147 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
                        RCP = climScen, initAge = initAge)})
           }
           #}
-      } else {
-        out <- lapply(sampleIDs, function(jx) {
-          print(paste("open data for clim",climModids[jx]))
-          load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_climdata",r_no,"_clim",climModids[jx],".rdata"))
-          runModel(jx,sampleX = dataS, harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
-                   ingrowth = ingrowth,climdata = climdata, 
-                   RCP = climScen, initAge = initAge)})
-        #  tta <- aetgs
+        } else {
+          out <- lapply(sampleIDs, function(jx) {
+            print(paste("open data for clim",climModids[jx]))
+            load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_climdata",r_no,"_clim",climModids[jx],".rdata"))
+            runModel(jx,sampleX = dataS, harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
+                     ingrowth = ingrowth,climdata = climdata, 
+                     RCP = climScen, initAge = initAge)})
+          #  tta <- aetgs
+        }
+        
+        rm(list=setdiff(ls(),c(toMem,"out")))
+        
+        #if(initAgei>1){
+        V <- litters <- H <- age <- nep <- wTot <- wGV <- soilC <- Vpine <- Vspruce <- Vbirch <- grossGrowth <-
+          array(0,c(nSitesRun0,nYears,length(sampleIDs)),
+                dimnames = list(paste0("site",1:nSitesRun0),
+                                2014+1:nYears,
+                                climMod[sampleIDs]))
+        for(ij in 1:length(out)){
+          V[,,ij] <- out[[ij]]$V
+          H[,,ij] <- out[[ij]]$H
+          age[,,ij] <- out[[ij]]$age
+          nep[,,ij] <- out[[ij]]$nep
+          wTot[,,ij] <- out[[ij]]$wTot
+          wGV[,,ij] <- out[[ij]]$wGV
+          soilC[,,ij] <- out[[ij]]$soilC
+          litters[,,ij] <- out[[ij]]$litters
+          Vpine[,,ij] <- out[[ij]]$Vpine
+          Vspruce[,,ij] <- out[[ij]]$Vspruce
+          Vbirch[,,ij] <- out[[ij]]$Vbirch
+          grossGrowth[,,ij] <- out[[ij]]$grossGrowth
+        }
+        outputAgei[[initAgei]] <- list(V, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, grossGrowth)
+        names(outputAgei[[initAgei]]) <- c("V", "H", "age", "nep", "wTot", "wGV", "soilC", "litters", "Vpine", "Vspruce", "Vbirch","grossGrowth")
+        print(Sys.time()-time0)
+        par(mfrow=c(3,1))
+        plot(colMeans(V[,,1]),type="l", ylim = c(-0.5, max(V)),ylab="V", xlab="time", 
+             main=paste(speciesName,"V, fert",ferti))
+        lines(colMeans(Vpine[,,1]),col="red")
+        lines(colMeans(Vspruce[,,1]),col="blue")
+        lines(colMeans(Vbirch[,,1]),col="green")
+        plot(colMeans(H[,,1]),type="l", ylim = c(-0.5, max(H)),ylab="H", xlab="time",
+             main=paste(speciesName,"H, fert",ferti))
+        plot(colMeans(grossGrowth[,,1]),type="l", 
+             ylim = c(-0.5, max(grossGrowth)),ylab="grossgrowth", xlab="time",
+             main=paste(speciesName,"grossgrowth, fert",ferti))
+        #}
       }
-      
-      rm(list=setdiff(ls(),c(toMem,"out")))
-      
-      #if(initAgei>1){
-      V <- litters <- H <- age <- nep <- wTot <- wGV <- soilC <- Vpine <- Vspruce <- Vbirch <-
-        array(0,c(nSitesRun0,nYears,length(sampleIDs)),
-              dimnames = list(paste0("site",1:nSitesRun0),
-                              2014+1:nYears,
-                              climMod[sampleIDs]))
-      for(ij in 1:length(out)){
-        V[,,ij] <- out[[ij]]$V
-        H[,,ij] <- out[[ij]]$H
-        age[,,ij] <- out[[ij]]$age
-        nep[,,ij] <- out[[ij]]$nep
-        wTot[,,ij] <- out[[ij]]$wTot
-        wGV[,,ij] <- out[[ij]]$wGV
-        soilC[,,ij] <- out[[ij]]$soilC
-        litters[,,ij] <- out[[ij]]$litters
-        Vpine[,,ij] <- out[[ij]]$Vpine
-        Vspruce[,,ij] <- out[[ij]]$Vspruce
-        Vbirch[,,ij] <- out[[ij]]$Vbirch
-      }
-      outputAgei[[initAgei]] <- list(V, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch)
-      names(outputAgei[[initAgei]]) <- c("V", "H", "age", "nep", "wTot", "wGV", "soilC", "litters", "Vpine", "Vspruce", "Vbirch")
-      print(Sys.time()-time0)
-      par(mfrow=c(2,1))
-      plot(V[1,,1],type="l", ylim = c(-0.5, max(V)),ylab="V_i", xlab="time", 
-           main=paste("fert",ferti))
-      lines(Vpine[1,,1],col="red")
-      lines(Vspruce[1,,1],col="blue")
-      lines(Vbirch[1,,1],col="green")
-      plot(H[1,,1],type="l", ylim = c(-0.5, max(H)),ylab="H_i", xlab="time",
-           main=paste("fert",ferti))
-      #}
-    }
-    output[[ferti]] <- outputAgei
-    names(output[[ferti]]) <- paste0("initAge",inAs)
-    print(paste0(harvScen," / fert",ferti," / age0 / V:"))
-    print(output[[ferti]][[1]]$V[1,1:10,1])
-    if(length(initAges)>1){
-      print(paste0(harvScen," / fert",ferti," / age30 / V:"))
-      print(output[[ferti]][[2]]$V[1,1:10,1])
-    }
-  }
-  names(output) <- paste0("fert",1:fertmax)
-  
-  outFileePath <-"/scratch/project_2000994/PREBASruns/PREBAStesting/HiilikarttaResults/"
-  #if(is.na(initAge)) initAge <- 0
-  outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
-                     "_species",speciesName,".pdf")
-  if(toFile) pdf(outFilee)
-  for(ij in 1:length(output[[1]][[1]])){
-    par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
-    ymax <- max(output[[1]][[1]][[ij]])
-    ymin <- min(output[[1]][[1]][[ij]])
-    for(ferti in 1:fertmax){
-      for(agei in 1:length(inAs)){
-        ymax <- max(ymax,max(colMeans(output[[ferti]][[agei]][[ij]])))
-        ymin <- min(ymin,min(colMeans(output[[ferti]][[agei]][[ij]])))
+      output[[ferti]] <- outputAgei
+      names(output[[ferti]]) <- paste0("initAge",inAs)
+      print(paste0(harvScen," / fert",ferti," / age0 / V:"))
+      print(output[[ferti]][[1]]$V[1,1:10,1])
+      if(length(initAges)>1){
+        print(paste0(harvScen," / fert",ferti," / age30 / V:"))
+        print(output[[ferti]][[2]]$V[1,1:10,1])
       }
     }
-    ylims <- c(ymin,ymax)
+    names(output) <- paste0("fert",1:fertmax)
     
-    ageplot <- F
-    if(ageplot){
-      for(agei in 1:length(inAs)){
-        par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
-        for(ferti in 1:fertmax){
-          if(names(output[[ferti]][[agei]])[ij]!="age"){
-            tmp <- output[[ferti]][[agei]][[ij]]
-            xi <- apply(tmp,2:3,mean)
-            xmean <- apply(tmp,2,mean)
-            timei <- 1:ncol(output[[ferti]][[agei]][[ij]])
-            ages <- apply(output[[ferti]][[agei]]$age,2:3,mean)
-            agemean <- apply(output[[ferti]][[agei]]$age,2,mean)
-            plot(agemean,xmean,xlab="age",ylab=names(output[[ferti]][[agei]])[ij],
-                 type="l",ylim=ylims,lwd=2,
-                 main=paste("fert =",ferti,"init year",inAs[agei]))
-            for(ik in sampleIDs){ # go through climate models
-              #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
-              lines(ages[,ik],xi[,ik],col="blue")
+    outFileePath <-"/scratch/project_2000994/PREBASruns/PREBAStesting/HiilikarttaResults/"
+    #if(is.na(initAge)) initAge <- 0
+    outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
+                       "_species",speciesName,".pdf")
+    if(toFile) pdf(outFilee)
+    for(ij in 1:length(output[[1]][[1]])){
+      par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
+      ymax <- max(output[[1]][[1]][[ij]])
+      ymin <- min(output[[1]][[1]][[ij]])
+      for(ferti in 1:fertmax){
+        for(agei in 1:length(inAs)){
+          ymax <- max(ymax,max(colMeans(output[[ferti]][[agei]][[ij]])))
+          ymin <- min(ymin,min(colMeans(output[[ferti]][[agei]][[ij]])))
+        }
+      }
+      ylims <- c(ymin,ymax)
+      
+      ageplot <- F
+      if(ageplot){
+        for(agei in 1:length(inAs)){
+          par(mfrow=c(ceiling(sqrt(fertmax)),floor(sqrt(fertmax))))
+          for(ferti in 1:fertmax){
+            if(names(output[[ferti]][[agei]])[ij]!="age"){
+              tmp <- output[[ferti]][[agei]][[ij]]
+              xi <- apply(tmp,2:3,mean)
+              xmean <- apply(tmp,2,mean)
+              timei <- 1:ncol(output[[ferti]][[agei]][[ij]])
+              ages <- apply(output[[ferti]][[agei]]$age,2:3,mean)
+              agemean <- apply(output[[ferti]][[agei]]$age,2,mean)
+              plot(agemean,xmean,xlab="age",ylab=names(output[[ferti]][[agei]])[ij],
+                   type="l",ylim=ylims,lwd=2,
+                   main=paste("fert =",ferti,"init year",inAs[agei]))
+              for(ik in sampleIDs){ # go through climate models
+                #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
+                lines(ages[,ik],xi[,ik],col="blue")
+              }
+              if(ymin<0) lines(c(min(ages),max(ages)),c(0,0),col="black")
             }
-            if(ymin<0) lines(c(min(ages),max(ages)),c(0,0),col="black")
           }
         }
       }
-    }
-    for(agei in 1:length(inAs)){
-      for(ferti in 1:fertmax){
-        tmp <- output[[ferti]][[agei]][[ij]]
-        xi <- apply(tmp,2:3,mean)
-        xmean <- apply(tmp,2,mean)
-        time <- 1:ncol(output[[ferti]][[agei]][[ij]])
-        plot(time,xmean,xlab="time",ylab=names(output[[ferti]][[agei]])[ij],
-             type="l",ylim=ylims,lwd=2,
-             main=paste("fert =",ferti,"init year",inAs[agei]))
-        for(ik in sampleIDs){ # go through climate models
-          #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
-          lines(time,xi[,ik],col="blue")
+      for(agei in 1:length(inAs)){
+        for(ferti in 1:fertmax){
+          tmp <- output[[ferti]][[agei]][[ij]]
+          xi <- apply(tmp,2:3,mean)
+          xmean <- apply(tmp,2,mean)
+          time <- 1:ncol(output[[ferti]][[agei]][[ij]])
+          plot(time,xmean,xlab="time",ylab=names(output[[ferti]][[agei]])[ij],
+               type="l",ylim=ylims,lwd=2,
+               main=paste("fert =",ferti,"init year",inAs[agei]))
+          for(ik in sampleIDs){ # go through climate models
+            #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
+            lines(time,xi[,ik],col="blue")
+          }
+          if(ymin<0) lines(c(min(time),max(time)),c(0,0),col="black")
         }
-        if(ymin<0) lines(c(min(time),max(time)),c(0,0),col="black")
       }
     }
+    if(toFile) dev.off()
+    outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
+                       "_species",speciesName,".rdata")
+    save(output,file=outFilee)
+    print(paste("Saved file",outFilee))
   }
-  if(toFile) dev.off()
-  outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
-                     "_species",speciesName,".rdata")
-  save(output,file=outFilee)
-  print(paste("Saved file",outFilee))
 }
 ###########
 ij <- 1
-for(ij in 1:nsets){
+for(ij in 2:nsets){
   #species <<- speciess[ij,]
   speciesName <<- speciesNames[ij]
   runOut <- lapply(harvScens[1], function(jx) {
     runPerHarvScen(jx,speciesSeti = ij)})
-  if(!parRuns){
-    runOut <- lapply(harvScens[-1], function(jx) {
-      runPerHarvScen(jx,speciesSeti = ij)})
-  } else {
-    runOut <- mclapply(harvScens[-1], function(jx) {
-      runPerHarvScen(jx,speciesSeti = ij)
-    }, mc.cores = 5, mc.silent=FALSE)      
-  }      
+  if(speciesName!="kitu"){ # for kitumaa, only noharv scen
+    if(!parRuns){
+      runOut <- lapply(harvScens[-1], function(jx) {
+        runPerHarvScen(jx,speciesSeti = ij)})
+    } else {
+      runOut <- mclapply(harvScens[-1], function(jx) {
+        runPerHarvScen(jx,speciesSeti = ij)
+      }, mc.cores = 5, mc.silent=FALSE)      
+    }      
+  }
 }
 
 
