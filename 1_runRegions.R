@@ -419,20 +419,23 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
           }
         }
       }
-      for(agei in 1:length(inAs)){
-        for(ferti in 1:fertmax){
-          tmp <- output[[ferti]][[agei]][[ij]]
-          xi <- apply(tmp,2:3,mean)
-          xmean <- apply(tmp,2,mean)
-          time <- 1:ncol(output[[ferti]][[agei]][[ij]])
-          plot(time,xmean,xlab="time",ylab=names(output[[ferti]][[agei]])[ij],
-               type="l",ylim=ylims,lwd=2,
-               main=paste("fert =",ferti,"init year",inAs[agei]))
-          for(ik in sampleIDs){ # go through climate models
-            #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
-            lines(time,xi[,ik],col="blue")
+      varplot <- F
+      if(varplot){
+        for(agei in 1:length(inAs)){
+          for(ferti in 1:fertmax){
+            tmp <- output[[ferti]][[agei]][[ij]]
+            xi <- apply(tmp,2:3,mean)
+            xmean <- apply(tmp,2,mean)
+            time <- 1:ncol(output[[ferti]][[agei]][[ij]])
+            plot(time,xmean,xlab="time",ylab=names(output[[ferti]][[agei]])[ij],
+                 type="l",ylim=ylims,lwd=2,
+                 main=paste("fert =",ferti,"init year",inAs[agei]))
+            for(ik in sampleIDs){ # go through climate models
+              #lines(as.numeric(names(Vmean)),Vi[,ij],col="blue")
+              lines(time,xi[,ik],col="blue")
+            }
+            if(ymin<0) lines(c(min(time),max(time)),c(0,0),col="black")
           }
-          if(ymin<0) lines(c(min(time),max(time)),c(0,0),col="black")
         }
       }
     }
