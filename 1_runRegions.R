@@ -12,7 +12,7 @@ fertmax <- fertmax0 <- 5 # max fert type
 if(testaus){
   nSitesRun <-2000
   nSitesRun0 <- 100
-  fertmax <- 2 # 5 max fert type
+  fertmax <- fertmax0 <- 2 # 5 max fert type
   yearsToMem <- c(30,50) #c(30,50,70)
 }
 CSCrun <- T
