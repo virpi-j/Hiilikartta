@@ -490,10 +490,10 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     savings <- F
     if(savings){
       print("save input data.")
-      print(fixAinit)
-      print(Dclearcut)
-      print(Hclearcut)
-      print(Ageclearcut)
+      #print(fixAinit)
+      #print(Dclearcut)
+      #print(Hclearcut)
+      #print(Ageclearcut)
       save(initPrebas, fixAinit, Dclearcut, Hclearcut, Ageclearcut, 
            fïle="/scratch/project_2000994/PREBASruns/PREBAStesting/Hiilikartta_testinput.rdata")
     }
@@ -2424,7 +2424,7 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
   #cord = SpatialPoints(xy, proj4string=CRS("+init=EPSG:3067"))
   location<-as.data.frame(spTransform(xy, CRS("+init=epsg:4326")))
   lat <- location$coords.x2
-  print(lat[1:5])
+  #print(lat[1:5])
   #print(paste("check crobas:",pCrobasX[55,3]))
   #print(pCrobasX)
   if(!is.na(P0currclim[1])){

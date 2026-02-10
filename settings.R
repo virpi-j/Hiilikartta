@@ -52,7 +52,7 @@ if(!exists("harvInten")) harvInten = "Base"#c("NoHarv","Base")
 
 # Missing from varOuts: 
 # MinPeat-index, NEPdrPeat
-if(!exists("mortMod")) mortMod=3
+if(!exists("mortMod")) mortMod=13
 if(!exists("BioIndCalc")) BioIndCalc=FALSE ##if true include the bioindeces in the data.tables outputDT
 if(!exists("siteTypes")) siteTypes=1:20
 if(!exists("landClassX")) landClassX=1:3
