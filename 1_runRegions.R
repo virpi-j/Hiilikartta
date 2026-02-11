@@ -419,8 +419,8 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
           }
         }
       }
-      varplot <- F
-      if(varplot){
+      varplot <- T
+      if(toFile & varplot){
         for(agei in 1:length(inAs)){
           for(ferti in 1:fertmax){
             tmp <- output[[ferti]][[agei]][[ij]]
