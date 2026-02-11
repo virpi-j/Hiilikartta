@@ -275,8 +275,8 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
             runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
                      RCP = climScen, initAge = initAge, ingrowth = F, sampleX = dataS)})
           
-          #if(harvSceni=="NoHarv"){ # 
-          if(is.na(initAge)){
+          if(harvSceni=="NoHarv"){ # 
+          #if(is.na(initAge)){
             multiOut <- array(0,dim = c(dim(out[[1]]$restartMod$multiOut),length(sampleIDs)))
             GVOut <- array(0,dim = c(dim(out[[1]]$restartMod$GVout),length(sampleIDs)))
             reStartSoil <- array(0,dim = c(dim(out[[1]]$reStartSoil),length(sampleIDs)))
@@ -420,7 +420,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         }
       }
       varplot <- T
-      if(toFile & varplot){
+      if(toFile | varplot){
         for(agei in 1:length(inAs)){
           for(ferti in 1:fertmax){
             tmp <- output[[ferti]][[agei]][[ij]]
@@ -447,8 +447,8 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
   }
 }
 ###########
-ij <- 1
-for(ij in 2:nsets){
+ij <- ij0 <- 1
+for(ij in ij0:nsets){
   #species <<- speciess[ij,]
   speciesName <<- speciesNames[ij]
   runOut <- lapply(harvScens[1], function(jx) {
