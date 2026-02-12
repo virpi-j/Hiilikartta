@@ -248,13 +248,13 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
           dataS$decid[nnSim] <- speciess[,"birch",speciesSeti,ferti]#simInitData$decid
           if(speciesName=="typical"){
             dataS$fert[nnSim] <- ferttypical          
-            dataS$landclass[nnSim] <- simInitData$landclass
+            #dataS$landclass[nnSim] <- simInitData$landclass
           } else if(speciesName=="kitu"){
             dataS$fert[nnSim] <- fertkitu          
             dataS$landclass[nnSim] <- 2
           } else {
             dataS$fert[nnSim] <- simInitData$fert
-            dataS$landclass[nnSim] <- 1
+            dataS$landclass[nnSim] <- simInitData$landclass
           }
           
           dataS$h[nnSim] <- simInitData$h
