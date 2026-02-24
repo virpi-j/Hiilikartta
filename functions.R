@@ -704,6 +704,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     }
     H <- apply(region$multiOut[1:nSitesRun0,,"H",ageCols,1],1:2,"mean")
     #print(H[1,1:40])
+    Vround <- apply(region$multiOut[1:nSitesRun0,,"VroundWood",ageCols,1],1:2,"mean")
     age <- apply(region$multiOut[1:nSitesRun0,,"age",ageCols,1],1:2,"mean")
     nep <- apply(region$multiOut[1:nSitesRun0,,"NEP/SMI[layer_1]",,1],1:2,"sum")
     wTot <- apply(region$multiOut[1:nSitesRun0,,c(24,25,31,32,33),,1],1:2,"sum")
@@ -726,11 +727,11 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
       reStartMod$GVout <- region$GVout[1:nSitesRun0,yearsToMem,]
       reStartMod$multiOut <- region$multiOut[1:nSitesRun0,yearsToMem,,,]
       reStartSoil = region$soilC[1:nSitesRun0,yearsToMem,,,]
-      out <- list(V, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, grossGrowth, reStartMod,reStartSoil, clim)
-      names(out) <- c("V", "H", "age", "nep", "wTot", "wGV", "soilC", "litters","Vpine", "Vspruce", "Vbirch","grossGrowth","restartMod","reStartSoil","clim")
+      out <- list(V, Vround, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, grossGrowth, reStartMod,reStartSoil, clim)
+      names(out) <- c("V", "Vround", "H", "age", "nep", "wTot", "wGV", "soilC", "litters","Vpine", "Vspruce", "Vbirch","grossGrowth","restartMod","reStartSoil","clim")
     } else {
-      out <- list(V, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch,grossGrowth)
-      names(out) <- c("V", "H", "age", "nep", "wTot", "wGV","soilC", "litters",
+      out <- list(V, Vround, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch,grossGrowth)
+      names(out) <- c("V", "Vround","H", "age", "nep", "wTot", "wGV","soilC", "litters",
                       "Vpine", "Vspruce", "Vbirch","grossGrowth")
     }
     
@@ -2525,7 +2526,7 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
                                   pCROBAS = pCrobasX,
                                   ECMmod = 1,
                                   defaultThin = defaultThin,
-                                  ClCut = ClCut, 
+                                  ClCut = ClCut*0, 
                                   alpharNcalc = T,
                                   areas =areas,
                                   ingrowth = ingrowth,
@@ -2675,7 +2676,7 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
                                   pCROBAS = pCrobasX,
                                   ECMmod = 1,
                                   defaultThin = defaultThin,
-                                  ClCut = ClCut, 
+                                  ClCut = ClCut*0, 
                                   areas =areas,
                                   ingrowth = ingrowth,
                                   energyCut = energyCut, 

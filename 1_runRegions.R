@@ -175,7 +175,7 @@ landclass0 <- 1 # landclass for sample0
 minpeat0 <- 1 # mineral soils for sample0 (minral, drainet peat, undrained peat)
 soiltype0 <- 1 # soiltypes (mineral soils, spruce mire, pine mire, ombrotrophic bog)
 
-harvSceni <- harvScens[1] #"NoHarv"
+harvSceni <- harvScens[2] #"NoHarv"
 ferti <- 1
 speciesSeti <- 1
 speciesName <- speciesNames[speciesSeti]
@@ -221,12 +221,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
       time0 <- Sys.time()
       outputAgei <-list()
       if(!(harvSceni%in%c("Powerline_under","Powerline_border"))) initAges <- c(NA,yearsToMem)
-      init0 <- 1
-      #if(ingrowth){ 
-      #  initAges <- c(NA, NA,yearsToMem) #
-      #init0 <- 0
-      #}
-      initAgei <- init0
+      initAgei <- init0 <- 1
       for(initAgei in init0:length(initAges)){ # 50#NA
         initAge <- initAges[initAgei]
         #if(initAgei==0){ 
@@ -333,13 +328,14 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         rm(list=setdiff(ls(),c(toMem,"out")))
         
         #if(initAgei>1){
-        V <- litters <- H <- age <- nep <- wTot <- wGV <- soilC <- Vpine <- Vspruce <- Vbirch <- grossGrowth <-
+        V <-  litters <- H <- age <- nep <- wTot <- wGV <- soilC <- Vpine <- Vspruce <- Vbirch <- grossGrowth <-
           array(0,c(nSitesRun0,nYears,length(sampleIDs)),
                 dimnames = list(paste0("site",1:nSitesRun0),
                                 2014+1:nYears,
                                 climMod[sampleIDs]))
         for(ij in 1:length(out)){
           V[,,ij] <- out[[ij]]$V
+          #Vround[,,ij] <- out[[ij]]$Vround
           H[,,ij] <- out[[ij]]$H
           age[,,ij] <- out[[ij]]$age
           nep[,,ij] <- out[[ij]]$nep
@@ -352,20 +348,20 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
           Vbirch[,,ij] <- out[[ij]]$Vbirch
           grossGrowth[,,ij] <- out[[ij]]$grossGrowth
         }
-        outputAgei[[initAgei]] <- list(V, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, grossGrowth)
+        outputAgei[[initAgei]] <- list(V,  H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, grossGrowth)
         names(outputAgei[[initAgei]]) <- c("V", "H", "age", "nep", "wTot", "wGV", "soilC", "litters", "Vpine", "Vspruce", "Vbirch","grossGrowth")
         print(Sys.time()-time0)
         par(mfrow=c(3,1))
         plot(colMeans(V[,,1]),type="l", ylim = c(-0.5, max(V)),ylab="V", xlab="time", 
-             main=paste(speciesName,"V, fert",ferti))
+             main=paste(harvScen,"/",speciesName,"/ V, fert",ferti))
         lines(colMeans(Vpine[,,1]),col="red")
         lines(colMeans(Vspruce[,,1]),col="blue")
         lines(colMeans(Vbirch[,,1]),col="green")
         plot(colMeans(H[,,1]),type="l", ylim = c(-0.5, max(H)),ylab="H", xlab="time",
-             main=paste(speciesName,"H, fert",ferti))
+             main=paste(harvScen,"/",speciesName,"/ H, fert",ferti))
         plot(colMeans(grossGrowth[,,1]),type="l", 
              ylim = c(-0.5, max(grossGrowth)),ylab="grossgrowth", xlab="time",
-             main=paste(speciesName,"grossgrowth, fert",ferti))
+             main=paste(harvScen,"/",speciesName,"/ grossgrowth, fert",ferti))
         #}
       }
       output[[ferti]] <- outputAgei
