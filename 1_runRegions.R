@@ -176,9 +176,8 @@ minpeat0 <- 1 # mineral soils for sample0 (minral, drainet peat, undrained peat)
 soiltype0 <- 1 # soiltypes (mineral soils, spruce mire, pine mire, ombrotrophic bog)
 
 harvSceni <- harvScens[1] #"NoHarv"
-#harvScens <- c("NoHarv","Mitigation","BaseLow","adapt","baseTapio", "Base")
 ferti <- 1
-speciesSeti <- 2
+speciesSeti <- 1
 speciesName <- speciesNames[speciesSeti]
 runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
   if((speciesSeti==2 & harvSceni=="NoHarv") | speciesSeti!=2){
@@ -192,9 +191,9 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
     } else if(harvSceni%in%c("NoHarv")){ 
       harvInten <- "NoHarv"
       harvScen <- "NoHarv"
-      if(speciesName=="kitu"){
-        initAges <- NA
-      }
+      #if(speciesName=="kitu"){
+      #  initAges <- NA
+      #}
     } else if (harvSceni%in%c("Powerline_under","Powerline_border")) { 
       harvScen <- harvSceni
       harvInten <- "Low"
@@ -206,20 +205,22 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
     }
     print(paste(harvScen,"/",harvInten))
     n0only <- F # T if run only modified segments (no dependence on harvest rate in other segments)
-    if(harvSceni%in%c("NoHarv","baseTapio","Powerline_under","Powerline_border")) n0only <- T
+    if(harvSceni%in%c("NoHarv","Recreation","baseTapio","Powerline_under","Powerline_border")) n0only <- T
     print(paste("Species",speciesName,"run..."))
     inAs <- c(0,yearsToMem)
     if(harvSceni%in%c("Powerline_under","Powerline_border")) inAs <- 0
-    if(speciesName=="kitu") inAs <- 0
+    #if(speciesName=="kitu") inAs <- 0
     fertmax <- fertmax0
     if(speciesName%in%c("typical","kitu")){ 
       fertmax <- 1 } 
+    
+    # Go through fert ids...
     for(ferti in 1:fertmax){
       ferti <<- ferti # make global
       print(paste(speciesName,"/",harvScen,"/",harvInten,"/ fert =",ferti))
       time0 <- Sys.time()
       outputAgei <-list()
-      if(!(harvSceni%in%c("Powerline_under","Powerline_border") | speciesName=="kitu")) initAges <- c(NA,yearsToMem)
+      if(!(harvSceni%in%c("Powerline_under","Powerline_border"))) initAges <- c(NA,yearsToMem)
       init0 <- 1
       #if(ingrowth){ 
       #  initAges <- c(NA, NA,yearsToMem) #
@@ -480,6 +481,10 @@ Sys.chmod(f, (file.info(f)$mode | "0777"),use_umask=FALSE)
 
 Sys.chmod(list.dirs("initSoilC"), "0777",use_umask=FALSE)
 f <- list.files("initSoilC", all.files = TRUE, full.names = TRUE, recursive = TRUE)
+Sys.chmod(f, (file.info(f)$mode | "0777"),use_umask=FALSE)
+
+Sys.chmod(list.dirs("initSoilC"), "0777",use_umask=FALSE)
+f <- list.files("initSoilCunc", all.files = TRUE, full.names = TRUE, recursive = TRUE)
 Sys.chmod(f, (file.info(f)$mode | "0777"),use_umask=FALSE)
 
 Sys.chmod(list.dirs("plots"), "0777",use_umask=FALSE)

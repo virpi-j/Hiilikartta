@@ -154,13 +154,11 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   #    coeffPeat1 <- EC1[sampleID]
   #    coeffPeat2 <- EC2[sampleID]
   #  }
-    if(RCP>0) {
-      rcps <- paste0(climMod[climModids[sampleID]],rcpx[RCP])
-    } else {rcps <- "CurrClim"}
-    print(paste0("Climate model ",sampleID,": ",rcps))
-  #} else {
-  #  sampleX[,area := N*16^2/10000] 
-  #}
+  if(RCP>0) {
+    rcps <- paste0(climMod[climModids[sampleID]],rcpx[RCP])
+  } else {rcps <- "CurrClim"}
+  print(paste0("Climate model ",sampleID,": ",rcps))
+  
   sampleX[,id:=climID]
   HarvLimX <- harvestLims * sum(sampleX$area)/sum(data.all$area)
   nSample = nrow(sampleX)#200#nrow(data.all)
@@ -171,9 +169,9 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   ## ---------------------------------------------------------
   i = 0
   rcpfile = rcps
-  load(paste(climatepath, rcpfile,".rdata", sep=""))  
 
   if(is.null(climdata)){
+    load(paste(climatepath, rcpfile,".rdata", sep=""))  
     print("Load clim data")
     if(rcpfile=="CurrClim"){
       #####process data considering only current climate###
@@ -208,7 +206,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
       }
     }
     gc()
-  }
+  } else { print("Use previous climdata")}
   ## Prepare the same initial state for all harvest scenarios that are simulated in a loop below
   data.sample <- sample_data.f(sampleX, nSample)
   if(rcpfile=="CurrClim") data.sample$id <- data.sample$CurrClimID
@@ -221,6 +219,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   
   HcFactor <- 1
   print(paste("Ingrowth =",ingrowth))
+  harv=harvScen; HcFactorX=HcFactor
   #if(outType=="testRun"){
   initPrebas = create_prebas_input_adapt.f(r_no, clim, data.sample, nYears = nYears,
                                            startingYear = startingYear,domSPrun=domSPrun,
@@ -316,7 +315,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
       harvInten = "NoHarv"
     }else if(harvScen=="Tapio"){
       HarvLim1 = 0
-    } else if(harvScen%in%c("Powerline_under","Powerline_border")){
+    } else if(harvScen%in%c("Recreation","Powerline_under","Powerline_border")){
     }else{
       HarvLim0 = nfiareas[ID==r_no, VOL_fraction]*rem[Scenario == harvScen & Area == Region, "1990-2013"]
       HarvLim0  = (totAreaSample/1000) / nfiareas[ID == r_no, AREA] * 1e3 *HarvLim0
@@ -341,7 +340,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     ## Therefore, we need to apply the areal fraction of removals scenarios
     ## nfiareas are in 1000 ha, model takes Harvlim in m3, while removals from Mela are 1000 m3
     #      HarvLim  = (nSample/1000) / nfiareas[ID == r_no, AREA] * 1e3 *HarvLim
-    if(!harvScen%in%c("Powerline_under","Powerline_border")){
+    if(!harvScen%in%c("Recreation","Powerline_under","Powerline_border")){
       if(year1harv==1){
         HarvLim1 <- HarvLimX
         if(harvInten == "Low"){ HarvLim1 <- HarvLimX * 0.6}
@@ -370,7 +369,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   
   ###calculate clearcutting area for the sample
   #if(!is.na(cutArX)){
-  if(!harvScen%in%c("Powerline_under","Powerline_border")){
+  if(!harvScen%in%c("Recreation","Powerline_under","Powerline_border")){
     print("calculating clearcutting areas")
     clcutArX <- clcutAr * sum(areas)/sum(data.all$area)
     if(length(clcutArX)<nYears) clcutArX<-c(clcutArX,clcutArX[rep(length(clcutArX),nYears-length(clcutArX))])
@@ -408,7 +407,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   
   print(paste0("harvest scenario ", harvScen))
   print(paste0("harvest intensity ", harvInten))
-  if(!harvScen%in%c("Powerline_under","Powerline_border")){
+  if(!harvScen%in%c("Recreation","Powerline_under","Powerline_border")){
     if(nrow(HarvLim1)<nYears){
       HarvLim1<-rbind(HarvLim1,matrix(HarvLim1[nrow(HarvLim1),],(nYears-nrow(HarvLim1)),ncol(HarvLim1),byrow = T))
     }
@@ -510,8 +509,22 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     if(harvScen=="baseTapio"){
       region <- funPreb(initPrebas,compHarv=compHarvX,
                         startSimYear=reStartYear)
+    } else if(harvScen=="Recreation"){
+      print(paste("start regionPrebas for",harvScen))
+      region <- regionPrebas(initPrebas, #HarvLim = as.numeric(HarvLimX),
+                             #minDharv = minDharvX,cutAreas =cutArX,
+                             compHarv=compHarvX,
+                             startSimYear=reStartYear)
+      if(FALSE){
+      print("V")
+      print(round(colMeans(apply(region$multiOut[,,"V",,1],1:2,sum)),2))
+      print("Vroundwood")
+      print(round(colMeans(apply(region$multiOut[,,"VroundWood",,1],1:2,sum)),2))
+      print("grossgrowth")
+      print(round(colMeans(apply(region$multiOut[,,43,,1],1:2,sum)),2))
+      }
     } else if(harvScen%in%c("Powerline_under","Powerline_border")){
-      print("start regionPrebas for powerlines...")
+      print(paste("start regionPrebas for",harvScen))
       region <- regionPrebas(initPrebas, #HarvLim = as.numeric(HarvLimX),
                              #minDharv = minDharvX,cutAreas =cutArX,
                              compHarv=compHarvX,
@@ -705,7 +718,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     #print(Vpine[1:3,1:8])
     Vspruce <- as.matrix((vSpFun(region,SpID=2)[,-1]))    
     Vbirch <- as.matrix((vSpFun(region,SpID=3)[,-1]))    
-    grossGrowth <- apply(region$multiOut[1:nSitesRun0,,"grossGrowth",,1],1:2,"sum")
+    grossGrowth <- apply(region$multiOut[1:nSitesRun0,,43,,1],1:2,"sum")
     
     if(harvScen=="NoHarv" & is.na(initAge) & !ingrowth){
       print("Save init states for ages ");print(yearsToMem)
@@ -2343,29 +2356,7 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
   
   # initVar[,6,] <- as.numeric(data.sample[,hc])
   
-  if(harv %in% c("adapt","protect","protectNoAdH","protectTapio",
-                 "adaptNoAdH","adaptTapio")){
-    ####always the 3 species layers in this two scenarios
-    ###check which BA ==0. and set to 0 the rest of the variable
-    NoPine <- which(initVar[,5,1]==0.)
-    NoSpruce <- which(initVar[,5,2]==0.)
-    NoDecid <- which(initVar[,5,3]==0.)
-    
-    # siteInfo[NoPine,8] <- siteInfo[NoPine,8] - 1
-    # siteInfo[NoSpruce,8] <- siteInfo[NoSpruce,8] - 1
-    # siteInfo[NoDecid,8] <- siteInfo[NoDecid,8] - 1
-    
-    initVar[NoPine,3:6,1] <- 0.
-    initVar[NoSpruce,3:6,2] <- 0.
-    initVar[NoDecid,3:6,3] <- 0.
-    # initVar[NoSpruce,,2] <- initVar[NoSpruce,,3]
-    # initVar[NoPine,,1:2] <- initVar[NoPine,,2:3]
-    
-    # nLay1 <- which(siteInfo[,8]==1)
-    # nLay2 <- which(siteInfo[,8]==2)
-    # initVar[nLay1,c(1,3:6),2:3] <- 0
-    # initVar[nLay2,c(1,3:6),3] <- 0
-  }else{
+  if(TRUE){
     NoPine <- which(initVar[,5,1]==0.)
     NoSpruce <- which(initVar[,5,2]==0.)
     NoDecid <- which(initVar[,5,3]==0.)
@@ -2446,6 +2437,7 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
       P0currclim <- as.vector(mean(P0currclim)*array(1,c(1,length(clim$id))))
       fT0 <- as.vector(mean(fT0)*array(1,c(1,length(clim$id))))
     }
+    
     if(harv%in%c("Powerline_under","Powerline_border")){
       print("Init for powerline cases")
       Ageclearcut = Hclearcut = Dclearcut = rep(NA,nSites) 
@@ -2485,6 +2477,76 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
                                   yassoRun = 1,
                                   mortMod = mortMod,
                                   p0currClim = P0currclim, fT0AvgCurrClim = fT0)
+    } else if(harv=="Recreation") {
+      modify_pTApio_cc <- function(par_Tapio,siteType,forestType,
+                                   ETSlimits = c(1200,1000),
+                                   country_zone,
+                                   HthinStart,
+                                   HthinLim,
+                                   BAlim,
+                                   BAthined){
+        
+        par_Tapio[siteType,forestType,country_zone,1:2] = ETSlimits
+        par_Tapio[siteType,forestType,country_zone,3] = HthinStart
+        par_Tapio[siteType,forestType,country_zone,4] = HthinLim
+        par_Tapio[siteType,forestType,country_zone,c(5:7,9:11,13:15,17:19)] = 0
+        par_Tapio[siteType,forestType,country_zone,c(8,12)] = BAlim
+        par_Tapio[siteType,forestType,country_zone,c(16,20)] = BAthined
+        
+        return(par_Tapio)  
+      }
+      #example code
+      #forestType=1 #conifers
+      #siteType=3
+      HthinStart=5 #start thinning when trees are at least 5 meters
+      HthinLim=999 #really high
+      country_zone = 1 #south, centre, north
+      BAlim = 27 ###maximum basal area after which thinnings stands are thinned
+      BAthined=20 ### basal area after thinning
+      
+      ####loops across all forestType site type and zones. Those parameters should be specific
+      new_pTapio <- pTapio
+      for(forestType in 1:2){
+        for(siteType in 1:5){
+          for(country_zone in 1:3){
+            new_pTapio <- modify_pTApio_cc(new_pTapio,siteType,forestType,
+                                           ETSlimits = c(1200,1000),
+                                           country_zone,
+                                           HthinStart,
+                                           HthinLim,
+                                           BAlim,
+                                           BAthined)
+          }
+        }
+      }
+      
+      initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),siteInfo=siteInfo,
+                                  latitude = lat,
+                                  pCROBAS = pCrobasX,
+                                  ECMmod = 1,
+                                  defaultThin = defaultThin,
+                                  ClCut = ClCut, 
+                                  alpharNcalc = T,
+                                  areas =areas,
+                                  ingrowth = ingrowth,
+                                  energyCut = energyCut, 
+                                  ftTapioPar = ftTapioParX,
+                                  tTapioPar = tTapioParX,
+                                  multiInitVar = as.array(initVar),
+                                  PAR = clim$PAR[, 1:(nYears*365)],
+                                  TAir=clim$TAir[, 1:(nYears*365)],
+                                  VPD=clim$VPD[, 1:(nYears*365)],
+                                  Precip=clim$Precip[, 1:(nYears*365)],
+                                  CO2=clim$CO2[, 1:(nYears*365)],
+                                  yassoRun = 1,
+                                  mortMod = mortMod,
+                                  p0currClim = P0currclim, fT0AvgCurrClim = fT0)
+      
+      initPrebas$tapioPars <- pTapio
+      #initPrebas$tTapioPar
+      #initPrebas$ftTapioPar
+      
+      
       } else {
         initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),siteInfo=siteInfo,
                                 latitude = lat,
@@ -2529,7 +2591,8 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
       }
       Dclearcut[powerlinesites] <- 999 #just a big number
       fixAinit[powerlinesites] <- 3 ### let's discuss about this on tuesday
-      initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),siteInfo=siteInfo,
+      initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),
+                                  siteInfo=siteInfo,
                                   latitude = lat,
                                   fixAinit = fixAinit,
                                   inDclct = Dclearcut,
@@ -2552,7 +2615,81 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
                                   CO2=clim$CO2[, 1:(nYears*365)],
                                   yassoRun = 1,
                                   mortMod = mortMod)
+    
       
+    } else if(harv=="Recreation") {
+      modify_pTApio_cc <- function(par_Tapio,siteType,forestType,
+                                   ETSlimits = c(1200,1000),
+                                   country_zone,
+                                   HthinStart,
+                                   HthinLim,
+                                   BAlim,
+                                   BAthined){
+        
+        par_Tapio[siteType,forestType,country_zone,1:2] = ETSlimits
+        par_Tapio[siteType,forestType,country_zone,3] = HthinStart
+        par_Tapio[siteType,forestType,country_zone,4] = HthinLim
+        par_Tapio[siteType,forestType,country_zone,c(5:7,9:11,13:15,17:19)] = 0
+        par_Tapio[siteType,forestType,country_zone,c(8,12)] = BAlim
+        par_Tapio[siteType,forestType,country_zone,c(16,20)] = BAthined
+        
+        return(par_Tapio)  
+      }
+      #example code
+      #forestType=1 #conifers
+      #siteType=3
+      HthinStart=5 #start thinning when trees are at least 5 meters
+      HthinLim=999 #really high
+      country_zone = 1 #south, centre, north
+      BAlim = 27 ###maximum basal area after which thinnings stands are thinned
+      BAthined=20 ### basal area after thinning
+      
+      ####loops across all forestType site type and zones. Those parameters should be specific
+      new_pTapio <- pTapio
+      for(forestType in 1:2){
+        for(siteType in 1:5){
+          for(country_zone in 1:3){
+            new_pTapio <- modify_pTApio_cc(new_pTapio,siteType,forestType,
+                                           ETSlimits = c(1200,1000),
+                                           country_zone,
+                                           HthinStart,
+                                           HthinLim,
+                                           BAlim,
+                                           BAthined)
+          }
+        }
+      }
+      
+      new_ftTapio <- ftTapio
+      new_ftTapio[,,,6] <- 10^8
+      new_ftTapio[,,,7] <- .5
+      
+      new_tTapio <- tTapio
+      new_tTapio[,,,6] <- 10^8
+      new_tTapio[,,,7] <- .5
+    
+      
+      initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),
+                                  siteInfo=siteInfo,
+                                  latitude = lat,
+                                  pCROBAS = pCrobasX,
+                                  ECMmod = 1,
+                                  defaultThin = defaultThin,
+                                  ClCut = ClCut, 
+                                  areas =areas,
+                                  ingrowth = ingrowth,
+                                  energyCut = energyCut, 
+                                  ftTapioPar = new_ftTapio,#ftTapioParX,
+                                  tTapioPar = new_tTapio,#tTapioParX,
+                                  tapioPars = pTapio,
+                                  multiInitVar = as.array(initVar),
+                                  PAR = clim$PAR[, 1:(nYears*365)],
+                                  TAir=clim$TAir[, 1:(nYears*365)],
+                                  VPD=clim$VPD[, 1:(nYears*365)],
+                                  Precip=clim$Precip[, 1:(nYears*365)],
+                                  CO2=clim$CO2[, 1:(nYears*365)],
+                                  yassoRun = 1,
+                                  mortMod = mortMod)
     } else {
       initPrebas <- InitMultiSite(nYearsMS = rep(nYears,nSites),siteInfo=siteInfo,
                                   latitude = lat,
