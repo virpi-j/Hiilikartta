@@ -328,14 +328,16 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         rm(list=setdiff(ls(),c(toMem,"out")))
         
         #if(initAgei>1){
-        V <-  litters <- H <- age <- nep <- wTot <- wGV <- soilC <- Vpine <- Vspruce <- Vbirch <- grossGrowth <-
+        V <- Wround <- Wenergy <- litters <- ba <- H <- age <- nep <- wTot <- wGV <- soilC <- Vpine <- Vspruce <- Vbirch <- grossGrowth <-
           array(0,c(nSitesRun0,nYears,length(sampleIDs)),
                 dimnames = list(paste0("site",1:nSitesRun0),
                                 2014+1:nYears,
                                 climMod[sampleIDs]))
         for(ij in 1:length(out)){
           V[,,ij] <- out[[ij]]$V
-          #Vround[,,ij] <- out[[ij]]$Vround
+          Wround[,,ij] <- out[[ij]]$Wround
+          Wenergy[,,ij] <- out[[ij]]$Wenergy
+          ba[,,ij] <- out[[ij]]$ba
           H[,,ij] <- out[[ij]]$H
           age[,,ij] <- out[[ij]]$age
           nep[,,ij] <- out[[ij]]$nep
@@ -348,8 +350,8 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
           Vbirch[,,ij] <- out[[ij]]$Vbirch
           grossGrowth[,,ij] <- out[[ij]]$grossGrowth
         }
-        outputAgei[[initAgei]] <- list(V,  H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, grossGrowth)
-        names(outputAgei[[initAgei]]) <- c("V", "H", "age", "nep", "wTot", "wGV", "soilC", "litters", "Vpine", "Vspruce", "Vbirch","grossGrowth")
+        outputAgei[[initAgei]] <- list(V, Wround, Wenergy, ba, H, age, nep, wTot, wGV, soilC, litters, Vpine, Vspruce, Vbirch, grossGrowth)
+        names(outputAgei[[initAgei]]) <- c("V","Wround", "Wenergy", "ba","H", "age", "nep", "wTot", "wGV", "soilC", "litters", "Vpine", "Vspruce", "Vbirch","grossGrowth")
         print(Sys.time()-time0)
         par(mfrow=c(3,1))
         plot(colMeans(V[,,1]),type="l", ylim = c(-0.5, max(V)),ylab="V", xlab="time", 
