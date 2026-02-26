@@ -734,7 +734,8 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     Vbirch <- as.matrix((vSpFun(region,SpID=3)[,-1]))    
     grossGrowth <- apply(region$multiOut[1:nSitesRun0,,43,,1],1:2,"sum")
     
-    if(harvScen=="NoHarv" & is.na(initAge) & !ingrowth){
+    if(is.na(initAge) & !ingrowth){
+      #if(harvScen=="NoHarv" & is.na(initAge) & !ingrowth){
       print("Save init states for ages ");print(yearsToMem)
       reStartMod <- list()
       reStartMod$GVout <- region$GVout[1:nSitesRun0,yearsToMem,]

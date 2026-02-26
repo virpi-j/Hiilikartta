@@ -175,9 +175,9 @@ landclass0 <- 1 # landclass for sample0
 minpeat0 <- 1 # mineral soils for sample0 (minral, drainet peat, undrained peat)
 soiltype0 <- 1 # soiltypes (mineral soils, spruce mire, pine mire, ombrotrophic bog)
 
-harvSceni <- harvScens[2] #"NoHarv"
+harvSceni <- harvScens[3] #"NoHarv"
 ferti <- 1
-speciesSeti <- 1
+speciesSeti <- 6
 speciesName <- speciesNames[speciesSeti]
 runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
   if((speciesSeti==2 & harvSceni=="NoHarv") | speciesSeti!=2){
@@ -214,6 +214,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
     if(speciesName%in%c("typical","kitu")){ 
       fertmax <- 1 } 
     
+    ###################################################
     # Go through fert ids...
     for(ferti in 1:fertmax){
       ferti <<- ferti # make global
@@ -222,6 +223,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
       outputAgei <-list()
       if(!(harvSceni%in%c("Powerline_under","Powerline_border"))) initAges <- c(NA,yearsToMem)
       initAgei <- init0 <- 1
+      ##############################################################
       for(initAgei in init0:length(initAges)){ # 50#NA
         initAge <- initAges[initAgei]
         #if(initAgei==0){ 
@@ -238,10 +240,20 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
           dataS$ba[nnSim] <- simInitData$ba
           dataS$age[nnSim] <- simInitData$age
           dataS$dbh[nnSim] <- simInitData$dbh
-          dataS$pine[nnSim] <- speciess[,"pine",speciesSeti,ferti]#simInitData$pine
-          dataS$spruce[nnSim] <- speciess[,"spruce",speciesSeti,ferti]#simInitData$spruce
-          dataS$birch[nnSim] <- 0*speciess[,"birch",speciesSeti,ferti]# simInitData$birch
-          dataS$decid[nnSim] <- speciess[,"birch",speciesSeti,ferti]#simInitData$decid
+          if(speciesName%in%c("typical","kitu")){
+            # Use different species compositions for all segments
+            dataS$pine[nnSim] <- speciess[,"pine",speciesSeti,ferti]#simInitData$pine
+            dataS$spruce[nnSim] <- speciess[,"spruce",speciesSeti,ferti]#simInitData$spruce
+            dataS$birch[nnSim] <- 0*speciess[,"birch",speciesSeti,ferti]# simInitData$birch
+            dataS$decid[nnSim] <- speciess[,"birch",speciesSeti,ferti]#simInitData$decid
+          } else {
+            # Use same average species compositions for all segments
+            dataS$pine[nnSim] <- mean(speciess[,"pine",speciesSeti,ferti])#simInitData$pine
+            dataS$spruce[nnSim] <- mean(speciess[,"spruce",speciesSeti,ferti])#simInitData$spruce
+            dataS$birch[nnSim] <- 0# simInitData$birch
+            dataS$decid[nnSim] <- mean(speciess[,"birch",speciesSeti,ferti])#simInitData$decid
+          }
+          
           if(speciesName=="typical"){
             dataS$fert[nnSim] <- ferttypical          
             #dataS$landclass[nnSim] <- simInitData$landclass
@@ -271,8 +283,8 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
             runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
                      RCP = climScen, initAge = initAge, ingrowth = F, sampleX = dataS)})
           
-          if(harvSceni=="NoHarv"){ # 
-          #if(is.na(initAge)){
+          #if(harvSceni=="NoHarv"){ # for all harvest scenarios, the init state at age x comes from noharv-scenario
+          if(is.na(initAge)){
             multiOut <- array(0,dim = c(dim(out[[1]]$restartMod$multiOut),length(sampleIDs)))
             GVOut <- array(0,dim = c(dim(out[[1]]$restartMod$GVout),length(sampleIDs)))
             reStartSoil <- array(0,dim = c(dim(out[[1]]$reStartSoil),length(sampleIDs)))
@@ -286,10 +298,11 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
                 GVOut[,,,ij] <- out[[ij]]$restartMod$GVout
                 reStartSoil[,,,,,ij] <- out[[ij]]$reStartSoil
               }
-              climdata <- out[[ij]]$clim
-              save(climdata, file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_climdata",r_no,"_clim",climModids[ij],".rdata"))
-              print(paste("save climdata for",paste0("clim",climModids[ij])))
-              
+              if(harvSceni=="NoHarv"){ # save clim data in the first run they are used
+                climdata <- out[[ij]]$clim
+                save(climdata, file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_climdata",r_no,"_clim",climModids[ij],".rdata"))
+                print(paste("save climdata for",paste0("clim",climModids[ij])))
+              }              
             }
             # average over climate models
             multiOut <- apply(multiOut,1:(length(dim(multiOut))-1),mean)
@@ -355,15 +368,15 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         print(Sys.time()-time0)
         par(mfrow=c(3,1))
         plot(colMeans(V[,,1]),type="l", ylim = c(-0.5, max(V)),ylab="V", xlab="time", 
-             main=paste(harvScen,"/",speciesName,"/ V, fert",ferti))
+             main=paste(harvScen,"/",speciesName,"/ age",initAge,"/ V, fert",ferti))
         lines(colMeans(Vpine[,,1]),col="red")
         lines(colMeans(Vspruce[,,1]),col="blue")
         lines(colMeans(Vbirch[,,1]),col="green")
         plot(colMeans(H[,,1]),type="l", ylim = c(-0.5, max(H)),ylab="H", xlab="time",
-             main=paste(harvScen,"/",speciesName,"/ H, fert",ferti))
+             main=paste(harvScen,"/",speciesName,"/ age",initAge,"/ H, fert",ferti))
         plot(colMeans(grossGrowth[,,1]),type="l", 
              ylim = c(-0.5, max(grossGrowth)),ylab="grossgrowth", xlab="time",
-             main=paste(harvScen,"/",speciesName,"/ grossgrowth, fert",ferti))
+             main=paste(harvScen,"/",speciesName,"/ age",initAge,"/ grossgrowth, fert",ferti))
         #}
       }
       output[[ferti]] <- outputAgei
