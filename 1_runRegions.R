@@ -175,7 +175,7 @@ landclass0 <- 1 # landclass for sample0
 minpeat0 <- 1 # mineral soils for sample0 (minral, drainet peat, undrained peat)
 soiltype0 <- 1 # soiltypes (mineral soils, spruce mire, pine mire, ombrotrophic bog)
 
-harvSceni <- harvScens[3] #"NoHarv"
+harvSceni <- harvScens[3] #"NoHarv","Recreation","baseTapio","powerline_under","powerline_border"
 ferti <- 1
 speciesSeti <- 6
 speciesName <- speciesNames[speciesSeti]
