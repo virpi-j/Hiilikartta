@@ -368,15 +368,15 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         print(Sys.time()-time0)
         par(mfrow=c(3,1))
         plot(colMeans(V[,,1]),type="l", ylim = c(-0.5, max(V)),ylab="V", xlab="time", 
-             main=paste(harvScen,"/",speciesName,"/ age",initAge,"/ V, fert",ferti))
+             main=paste(harvScen,"/",speciesName,"/ init age",initAge,"/ V, fert",ferti))
         lines(colMeans(Vpine[,,1]),col="red")
         lines(colMeans(Vspruce[,,1]),col="blue")
         lines(colMeans(Vbirch[,,1]),col="green")
         plot(colMeans(H[,,1]),type="l", ylim = c(-0.5, max(H)),ylab="H", xlab="time",
-             main=paste(harvScen,"/",speciesName,"/ age",initAge,"/ H, fert",ferti))
+             main=paste(harvScen,"/",speciesName,"/ init age",initAge,"/ H, fert",ferti))
         plot(colMeans(grossGrowth[,,1]),type="l", 
              ylim = c(-0.5, max(grossGrowth)),ylab="grossgrowth", xlab="time",
-             main=paste(harvScen,"/",speciesName,"/ age",initAge,"/ grossgrowth, fert",ferti))
+             main=paste(harvScen,"/",speciesName,"/ init age",initAge,"/ grossgrowth, fert",ferti))
         #}
       }
       output[[ferti]] <- outputAgei

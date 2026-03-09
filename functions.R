@@ -708,17 +708,28 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     
     V <- apply(region$multiOut[1:nSitesRun0,,"V",,1],1:2,"sum")
     #print(V[1,1:40])
-    agesEnd <- region$multiOut[1:nSitesRun0,nYears,"age",,1]
-    ageCols <- 1
-    if(!is.null(dim(agesEnd))){
-      ageCols <- which(colMeans(agesEnd)>0)
+    ageCols <- 1:dim(region$multiOut)[4]
+    if(FALSE){
+      agesEnd <- region$multiOut[1:nSitesRun0,nYears,"age",,1]
+      ageCols <- 1
+      if(!is.null(dim(agesEnd))){
+        ageCols <- which(colMeans(agesEnd)>0)
+      }
     }
-    H <- apply(region$multiOut[1:nSitesRun0,,"H",ageCols,1],1:2,"mean")
+    mean_by_ba <- function(tmp){
+      bas <- region$multiOut[1:nSitesRun0,,"BA",ageCols,1]
+      tmps <- apply(bas*tmp,1:2,"sum")/apply(bas,1:2,"sum")
+      tmps[which(is.na(tmps))] <- 0
+      return(tmps)
+    }
+    H <- mean_by_ba(region$multiOut[1:nSitesRun0,,"H",ageCols,1])
+    #H <- apply(region$multiOut[1:nSitesRun0,,"H",ageCols,1],1:2,"mean")
     ba <- apply(region$multiOut[1:nSitesRun0,,"BA",ageCols,1],1:2,"sum")
     #print(H[1,1:40])
     Wround <- apply(region$multiOut[1:nSitesRun0,,"WroundWood",ageCols,1],1:2,"sum")
     Wenergy <- apply(region$multiEnergyWood[1:nSitesRun0,,ageCols,"biomass"],1:2,"sum")
-    age <- apply(region$multiOut[1:nSitesRun0,,"age",ageCols,1],1:2,"mean")
+    age <- mean_by_ba(region$multiOut[1:nSitesRun0,,"age",ageCols,1])
+    #age <- apply(region$multiOut[1:nSitesRun0,,"age",ageCols,1],1:2,"mean")
     nep <- apply(region$multiOut[1:nSitesRun0,,"NEP/SMI[layer_1]",,1],1:2,"sum")
     wTot <- apply(region$multiOut[1:nSitesRun0,,c(24,25,31,32,33),,1],1:2,"sum")
     wGV <- region$GVout[1:nSitesRun0,,4]
@@ -2431,6 +2442,7 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
   location<-as.data.frame(spTransform(xy, CRS("+init=epsg:4326")))
   lat <- location$coords.x2
   
+  #print(paste("alue",r_no))
   # Recreation management parameters
   if(harv=="Recreation") {
     modify_pTApio_cc <- function(par_Tapio,siteType,forestType,
@@ -2456,9 +2468,18 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
     HthinStart=5 #start thinning when trees are at least 5 meters
     HthinLim=9999 #really high
     country_zone = 1 #south, centre, north
-    BAlim = 27 ###maximum basal area after which thinnings stands are thinned
-    BAthined=20 ### basal area after thinning
-    
+    if(r_no%in%c(8)){
+      print(paste("North Finland Recreation limits"))
+      BAlim = 17 ###maximum basal area after which thinnings stands are thinned
+      BAthined=10 ### basal area after thinning
+    } else if(r_no%in%c(16,19)){
+      print(paste("Kainuu & N-Ostrobotnia Recreation limits"))
+      BAlim = 22 ###maximum basal area after which thinnings stands are thinned
+      BAthined=15 ### basal area after thinning
+    } else {
+      BAlim = 27 ###maximum basal area after which thinnings stands are thinned
+      BAthined=20 ### basal area after thinning
+    }
     ####loops across all forestType site type and zones. Those parameters should be specific
     new_pTapio <- pTapio
     for(forestType in 1:2){
