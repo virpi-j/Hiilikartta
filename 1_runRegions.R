@@ -387,6 +387,14 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         print(paste0(harvScen," / fert",ferti," / age30 / V:"))
         print(output[[ferti]][[2]]$V[1,1:10,1])
       }
+      if(length(initAges)>2){
+        print(paste0(harvScen," / fert",ferti," / age50 / V:"))
+        print(output[[ferti]][[3]]$V[1,1:10,1])
+      }
+      if(length(initAges)>3){
+        print(paste0(harvScen," / fert",ferti," / age85 / V:"))
+        print(output[[ferti]][[4]]$V[1,1:10,1])
+      }
     }
     names(output) <- paste0("fert",1:fertmax)
     

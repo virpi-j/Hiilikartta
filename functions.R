@@ -39,7 +39,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
   #if(outType=="hiiliKartta") print(paste("Initial age",initAge))
   if(!is.na(initAge)){
     tSegs <- which(initAge==yearsToMem)
-    print(paste("Load age",initAge,"initial data."))
+    print(paste("Load age",initAge,"initial data with tsegs ind =",tSegs))
     load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_startStates",r_no,"_fert",ferti,".rdata"))
     print(paste("Load file",paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_startStates",r_no,"_fert",ferti,".rdata")))
     initGVOutSegs <- reStartMod$GVOut[,tSegs,]
@@ -2468,7 +2468,7 @@ create_prebas_input_adapt.f = function(r_no, clim, data.sample, nYears,
     HthinStart=5 #start thinning when trees are at least 5 meters
     HthinLim=9999 #really high
     country_zone = 1 #south, centre, north
-    if(r_no%in%c(8)){
+    if(r_no==8){ #Lapland
       print(paste("North Finland Recreation limits"))
       BAlim = 17 ###maximum basal area after which thinnings stands are thinned
       BAthined=10 ### basal area after thinning
