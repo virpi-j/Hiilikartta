@@ -82,16 +82,16 @@ harvScen <- "Base"
 harvInten <- "Base"
 manualRun <- F
 if(manualRun){
-  RCP=0
-  harvScen <- "Base"
-  harvInten <- "Base"
-  rcps<-"CurrClim"
+  #RCP=0
+  #harvScen <- "Base"
+  #harvInten <- "Base"
+  #rcps<-"CurrClim"
   easyInit=FALSE; forceSaveInitSoil=F; cons10run = F
   procDrPeat=F; coeffPeat1=-240; coeffPeat2=70
   coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077#g m-2 y-1
   landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas
   initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1
-  sampleX = dataS; P0currclim=NA; fT0=NA
+  P0currclim=NA; fT0=NA
   climdata=NULL
   sampleID = 1; initAge=NA
   sampleX <- dataS
@@ -108,6 +108,7 @@ clim <- out$clim
 CoeffSim <- T
 ferti <- 1
 dataSorig <- dataS
+areas_n0 <- dataS$area
 output <- list()
 startingYear = 2015
 endingYear = 2100
@@ -275,9 +276,9 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         
         #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
         #source("~/Hiilikartta/functions.R", local = T)
-        if(manualRun){
-          RCP=climScen; climdata=NULL; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; outType = "hiiliKartta"; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=dataS; P0currclim=NA; fT0=NA; sampleID <- 1
-        }
+        #if(manualRun){
+        #  RCP=climScen; climdata=NULL; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; outType = "hiiliKartta"; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=dataS; P0currclim=NA; fT0=NA; sampleID <- 1
+        #}
         if(initAgei==1){
           out <- lapply(sampleIDs, function(jx) {
             runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
@@ -317,13 +318,16 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
             save(reStartMod,reStartSoil,
                  file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_startStates",r_no,"_fert",ferti,".rdata"))
             print(paste("Init stages saved for ages")); print(yearsToMem)
+            print("Average volumes for init stages")
+            print(round(colMeans(apply(reStartMod$multiOut[,,"V",,1],1:2,sum))))
           }
           if(ingrowth){ # if ingrowth=T run again with ingrowth
             print("Run again with ingrowth!")
             out <- lapply(sampleIDs, function(jx) {
               print(paste("open data for clim",climModids[jx]))
               load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_climdata",r_no,"_clim",climModids[jx],".rdata"))
-              runModel(jx,sampleX = dataS, harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
+              runModel(jx,sampleX = dataS, harvScen=harvScen, harvInten=harvInten, 
+                       outType = "hiiliKartta", 
                        ingrowth = ingrowth, climdata = climdata,
                        RCP = climScen, initAge = initAge)})
           }
@@ -372,6 +376,8 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         lines(colMeans(Vpine[,,1]),col="red")
         lines(colMeans(Vspruce[,,1]),col="blue")
         lines(colMeans(Vbirch[,,1]),col="green")
+        lines(c(1,dim(V)[2]),c(100,100),col="black")
+        lines(c(1,dim(V)[2]),c(200,200),col="black")
         plot(colMeans(H[,,1]),type="l", ylim = c(-0.5, max(H)),ylab="H", xlab="time",
              main=paste(harvScen,"/",speciesName,"/ init age",initAge,"/ H, fert",ferti))
         plot(colMeans(grossGrowth[,,1]),type="l", 
@@ -383,17 +389,21 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
       names(output[[ferti]]) <- paste0("initAge",inAs)
       print(paste0(harvScen," / fert",ferti," / age0 / V:"))
       print(output[[ferti]][[1]]$V[1,1:10,1])
+      print(apply(output[[ferti]][[1]]$V[,1:10,1],2,mean))
       if(length(initAges)>1){
         print(paste0(harvScen," / fert",ferti," / age30 / V:"))
         print(output[[ferti]][[2]]$V[1,1:10,1])
+        print(apply(output[[ferti]][[2]]$V[,1:10,1],2,mean))
       }
       if(length(initAges)>2){
         print(paste0(harvScen," / fert",ferti," / age50 / V:"))
         print(output[[ferti]][[3]]$V[1,1:10,1])
+        print(apply(output[[ferti]][[3]]$V[,1:10,1],2,mean))
       }
       if(length(initAges)>3){
         print(paste0(harvScen," / fert",ferti," / age85 / V:"))
         print(output[[ferti]][[4]]$V[1,1:10,1])
+        print(apply(output[[ferti]][[4]]$V[,1:10,1],2,mean))
       }
     }
     names(output) <- paste0("fert",1:fertmax)
@@ -462,13 +472,17 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
     if(toFile) dev.off()
     outFilee <- paste0(outFileePath,"HiiliKarttaTestPlots_rno",r_no,"_",harvScen,"_",harvInten,
                        "_species",speciesName,".rdata")
-    save(output,file=outFilee)
+    save(output,areas_n0,file=outFilee)
     print(paste("Saved file",outFilee))
   }
 }
 ###########
 ij <- ij0 <- 1
-for(ij in ij0:nsets){
+if(exists("nsets_sim")){
+  if(nsets_sim[1]==0) nsets_sim<-ij0:nsets
+}
+if(!exists("nsets_sim")) nsets_sim <- ij0:nsets
+for(ij in nsets_sim){
   #species <<- speciess[ij,]
   speciesName <<- speciesNames[ij]
   runOut <- lapply(harvScens[1], function(jx) {

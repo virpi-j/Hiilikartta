@@ -49,6 +49,8 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     } else {
       initmultiOutSegs <- reStartMod$multiOut[,tSegs,,,]
       initSoilCSegs <- reStartSoil[,tSegs,,,]
+      print("Average volume for init stage")
+      print(round(mean(apply(initmultiOutSegs[,"V",,1],1,sum))))
     }
   }
     
