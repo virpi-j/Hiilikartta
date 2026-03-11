@@ -5,7 +5,7 @@
 ## MAIN SCRIPT: uncRun for random segments, uncSeg for random values for segments
 ## ---------------------------------------------------------------------
 runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
-                     harvScen,harvInten,easyInit=FALSE,
+                     harvScen,harvInten,easyInit=FALSE,saveInitStage=F,
                      forceSaveInitSoil=F, cons10run = F,
                      procDrPeat=F,coeffPeat1=-240,coeffPeat2=70,
                      coefCH4 = 0.34,#g m-2 y-1
@@ -747,7 +747,7 @@ runModel <- function(sampleID, outType="dTabs", RCP=0, rcps = "CurrClim",
     Vbirch <- as.matrix((vSpFun(region,SpID=3)[,-1]))    
     grossGrowth <- apply(region$multiOut[1:nSitesRun0,,43,,1],1:2,"sum")
     
-    if(is.na(initAge) & !ingrowth){
+    if(is.na(initAge) & saveInitStage){#!ingrowth){
       #if(harvScen=="NoHarv" & is.na(initAge) & !ingrowth){
       print("Save init states for ages ");print(yearsToMem)
       reStartMod <- list()

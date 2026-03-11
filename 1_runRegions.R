@@ -108,7 +108,7 @@ clim <- out$clim
 CoeffSim <- T
 ferti <- 1
 dataSorig <- dataS
-areas_n0 <- dataS$area
+areas_n0 <- dataS$area[1:nSitesRun0]
 output <- list()
 startingYear = 2015
 endingYear = 2100
@@ -176,7 +176,7 @@ landclass0 <- 1 # landclass for sample0
 minpeat0 <- 1 # mineral soils for sample0 (minral, drainet peat, undrained peat)
 soiltype0 <- 1 # soiltypes (mineral soils, spruce mire, pine mire, ombrotrophic bog)
 
-harvSceni <- harvScens[3] #"NoHarv","Recreation","baseTapio","powerline_under","powerline_border"
+harvSceni <- harvScens[1] #"NoHarv","Recreation","baseTapio","powerline_under","powerline_border"
 ferti <- 1
 speciesSeti <- 6
 speciesName <- speciesNames[speciesSeti]
@@ -281,7 +281,8 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         #}
         if(initAgei==1){
           out <- lapply(sampleIDs, function(jx) {
-            runModel(jx,harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
+            runModel(jx,harvScen=harvScen, harvInten=harvInten, 
+                     outType = "hiiliKartta", saveInitStage = T,
                      RCP = climScen, initAge = initAge, ingrowth = F, sampleX = dataS)})
           
           #if(harvSceni=="NoHarv"){ # for all harvest scenarios, the init state at age x comes from noharv-scenario
