@@ -83,7 +83,7 @@ source(paste0(projDir,"functions.R"), local = T)
 outType <- "testRun"
 harvScen <- "Base"
 harvInten <- "Base"
-manualRun <- T
+manualRun <- F
 if(manualRun){
   RCP=0
   harvScen <- "Base"
@@ -110,7 +110,7 @@ out <- runModel(1,sampleX = dataS, harvScen="Base",harvInten="Base",
                 #rcps=rcps, RCP=1,
                 HcFactor = HcFactor,
                 compHarvX = 2, outType = outType, 
-                procDrPeat = T, HcModInit = 0, scale_cc_area = 10)
+                procDrPeat = T, HcModInit = HcModInit, scale_cc_area = 10)
 n1 <- which(dataS$landclass==1)
 Vest <- sum(apply(out$region$multiOut[n1,1,"V",,1],1,sum)*dataS$area[n1])/sum(dataS$area[n1])
 ggest <- sum(apply(out$region$multiOut[n1,1,"grossGrowth",,1],1,sum)*dataS$area[n1])/sum(dataS$area[n1])
@@ -149,7 +149,7 @@ if(finRuns){
   #dataS$cons <- 0 # all to managed forest
   Nmodule <- 0
   ggFigs <- T
-  HcModInit <- 0 # 0 = Annikin, 2=default
+  #HcModInit <- 0 # 0 = Annikin, 2=default
   HcFactor <- 1#*(gg2015/ggest)^2
   print(HcFactor)
   figToFile <- T
