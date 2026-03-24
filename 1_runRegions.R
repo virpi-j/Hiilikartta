@@ -8,6 +8,8 @@ setwd(projDir)
 
 if(!exists("nSitesRun")) nSitesRun <-10000
 nSitesRun0 <- 100
+if(finRuns) nSitesRun0 <- nSitesRun
+
 fertmax <- fertmax0 <- 5 # max fert type
 if(testaus){
   nSitesRun <-2000
@@ -29,10 +31,10 @@ rcpx <- c("rcp26","rcp45","rcp85")
 if(testaus){
   climMod <- c("CanESM2.","CNRM.")
 }
-climScen <- 1 # 1=rcp2.6, 2=rcp4.5, 3=rcp8.5
+RCP <- 1 # 1=rcp2.6, 2=rcp4.5, 3=rcp8.5
 climModid <- 1 # 
 climModids <- sampleIDs <- 1:length(climMod) # for iterations
-rcps <- rcpsFile <-paste0(climMod[climModid],rcpx[climScen])
+rcps <- rcpsFile <-paste0(climMod[climModid],rcpx[RCP])
 rcpsName <- rcps
 
 source(paste0(projDir,"settings.R"))#, local = T)
@@ -49,6 +51,7 @@ set.seed(1)
 nn0 <- order(data.all$age)[1:nSitesRun0] # The youngest segments to test set
 nn1 <- sample(setdiff(1:dim(data.all)[1],nn0), nSitesRun - nSitesRun0)
 dataS <- data.all[c(nn0,nn1),]
+if(finRuns) dataS <- data.all[sample(1:nrow(data.all),nSitesRun),]
 
 print(paste("Region",regnames[r_no]))
 load(paste0("/scratch/project_2000994/PREBASruns/finRuns/input/maakunta/maakunta_",r_no,"_IDsTab.rdata"))
@@ -80,12 +83,12 @@ source(paste0(projDir,"functions.R"), local = T)
 outType <- "testRun"
 harvScen <- "Base"
 harvInten <- "Base"
-manualRun <- F
+manualRun <- T
 if(manualRun){
-  #RCP=0
-  #harvScen <- "Base"
-  #harvInten <- "Base"
-  #rcps<-"CurrClim"
+  RCP=0
+  harvScen <- "Base"
+  harvInten <- "Base"
+  rcps<-"CurrClim"
   easyInit=FALSE; forceSaveInitSoil=F; cons10run = F
   procDrPeat=F; coeffPeat1=-240; coeffPeat2=70
   coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077#g m-2 y-1
@@ -94,14 +97,219 @@ if(manualRun){
   P0currclim=NA; fT0=NA
   climdata=NULL
   sampleID = 1; initAge=NA
+  HcModInit = 0
   sampleX <- dataS
+  scale_cc_area <- 10
 }
 
 # initialize 
 print(paste("Run initialization for region",r_no,", sample size",nSitesRun,"..."))
-out <- runModel(1,sampleX = dataS, harvScen="Base",harvInten="Base",rcps="CurrClim",RCP=0, outType = outType)
+out <- runModel(1,sampleX = dataS, harvScen="Base",harvInten="Base",
+                initilizeSoil = T,
+                rcps="CurrClim", RCP=0, 
+                #rcps=rcps, RCP=1,
+                HcFactor = HcFactor,
+                compHarvX = 2, outType = outType, 
+                procDrPeat = T, HcModInit = 0, scale_cc_area = 10)
+n1 <- which(dataS$landclass==1)
+Vest <- sum(apply(out$region$multiOut[n1,1,"V",,1],1,sum)*dataS$area[n1])/sum(dataS$area[n1])
+ggest <- sum(apply(out$region$multiOut[n1,1,"grossGrowth",,1],1,sum)*dataS$area[n1])/sum(dataS$area[n1])
 print("done.")
 clim <- out$clim
+#rm("out"); gc()
+
+dataSor <- dataS
+
+if(finRuns){
+  newP0 <- T
+  if(newP0){
+    print("estimate P0CurrClim")
+    P0currclim <- (out$region$P0y[,nYears,1])
+    fT0 <- (fTfun(out$region$weatherYasso[,nYears,1],
+                  out$region$weatherYasso[,nYears,2],
+                  out$region$weatherYasso[,nYears,3]))
+    save(P0currclim, fT0, file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/Hk_P0_",r_no,".rdata"))
+  } # save P0 & ft0 currClim 
+  newP0 <- F
+  #dataS <- dataSor[1:min(1000,nSitesRun),]
+  dataS <- dataSor
+  if(FALSE){
+    #V2015 <- read_excel(path = "/users/vjunttil/finruns_to_update/VMIstats.xlsx",  
+    #                    sheet = "tilavuus", range = "B3:G25")
+    V2015 <- c(163.3)
+    gg2015 <- c(6.9)
+    c <- (V2015/Vest)^(1/3)
+    dataS <- dataSor[1:min(1000,nSitesRun),]
+    dataS$ba <- dataS$ba*c^2
+    dataS$h <- dataS$h*c
+    dataS$dbh <- dataS$dbh*sqrt(c)
+  }
+  
+  if(dev.interactive())  dev.off()
+  #dataS$cons <- 0 # all to managed forest
+  Nmodule <- 0
+  ggFigs <- T
+  HcModInit <- 0 # 0 = Annikin, 2=default
+  HcFactor <- 1#*(gg2015/ggest)^2
+  print(HcFactor)
+  figToFile <- T
+  for(Nmodule in 0:1){
+    if(Nmodule>0) newP0 <- F
+    if(!newP0 & Nmodule>0) load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/Hk_P0_",r_no,".rdata"))
+    source(paste0(projDir,"functions.R"), local = T)
+    if(Nmodule==0) {P0currclim<-NA 
+    fT0<-NA}
+    out <- runModel(1,sampleX = dataS, harvScen="Base",harvInten="Base",
+                    rcps="CurrClim", RCP=0, 
+                    #rcps=rcps, RCP=1,
+                    HcFactor = HcFactor, alpharVersion = alpharVersion,
+                    compHarvX = 2, outType = outType, 
+                    initilizeSoil = F,
+                    procDrPeat = T, HcModInit = HcModInit, scale_cc_area = 10,
+                    P0currclim = P0currclim, fT0 = fT0)
+    if(TRUE){
+      areas <- dataS$area
+      outresults <- data.frame()
+      aveW <- function(tmp, a=areas) colSums(apply(tmp,1:2,sum)*a)/sum(a)
+      V <- aveW(out$region$multiOut[,,"V",,1])
+      grossgrowth <-  aveW(out$region$multiOut[,,"grossGrowth",,1])
+      Wtot <- aveW(out$region$multiOut[,,c(24,25,31,32,33),,1])
+      Wharv <- aveW(out$region$multiOut[,,"WroundWood",,1]+
+                      out$region$multiEnergyWood[,,,2])
+      Vharv <- aveW(out$region$multiOut[,,"VroundWood",,1]+
+                      out$region$multiEnergyWood[,,,1])
+      NPP <- -aveW(out$region$multiOut[,,"npp",,1])
+      NEE <- -aveW(out$region$multiOut[,,"NEP/SMI[layer_1]",,1])*10
+      n1 <- which(dataS$minpeat==1)
+      soilC <- aveW(out$region$multiOut[n1,,"soilC",,1],a = areas[n1])
+      gvW <- colSums(out$region$GVout[,,4]*areas)/sum(areas)
+      Cstock <- Wtot + soilC + gvW
+      NBE <- (44/12*(NEE+Wharv)+
+                (298*out$region$N2OemisDrPeat_kgyear + 25*out$region$CH4emisDrPeat_kgyear)/sum(dataS$area))/1000
+      if(figToFile){
+        par(mfrow=c(2,1))
+        plot(2016:2100, V, type="l", xlab="year", ylab="V", main=paste("N module",Nmodule))
+        plot(2016:2100,Vharv,type="l",xlab="year",ylab="Vharv,m3ha-1")
+        points(2016:(2015+nrow(HarvLimMaak)),rowSums(HarvLimMaak)/sum(data.all$area)*1000,
+               col="red")
+        pdf(paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/region",r_no,"_Nmod",Nmodule,"_Hc",HcModInit,"_Base_sim.pdf"))      
+      }
+      par(mfrow=c(3,2))
+      title <- paste("N module",Nmodule)
+      if(Nmodule==1) title <- paste("N module",Nmodule,"alpharVersion =", alpharVersion)
+      plot(2016:2100, V, type="l", xlab="year", ylab="V", main=title)
+      plot(2016:2100, grossgrowth, type="l",xlab="year", ylab="grossgrowth")
+      plot(2016:2100, Wharv, type="l", xlab="year", ylab="Wharv, kg C ha-1")
+      plot(2016:2100, NEE, type="l", xlab="year", ylab="NEE, kg C ha-1")
+      plot(2016:2100, Wtot, type="l", xlab="year", ylab="Wtot, kg C ha-1")
+      plot(2016:2100, soilC, type="l", xlab="year", ylab="soilC, kg C ha-1")
+      plot(2016:2100, gvW, type="l", xlab="year", ylab="gvW, kg C ha-1")
+      plot(2016:2100, Cstock, type="l", xlab="year", ylab="C stock, kg C ha-1")
+      plot(2016:2100, NBE, type="l", xlab="year", ylab="NBE, t CO2eq ha-1")
+      lines(c(2016,2100),c(0,0))
+      #print(sum(data.all$area)*NBE/1e6)
+      plot(2016:2100,Vharv,type="l",xlab="year",ylab="Vharv,m3ha-1")
+      points(2016:(2015+nrow(HarvLimMaak)),rowSums(HarvLimMaak)/sum(data.all$area)*1000,
+             col="red")
+      wf_stkg <- aveW(out$region$multiOut[,,"wf_STKG",,1])
+      plot(2016:2100,wf_stkg,type="l",xlab="year",ylab="wf_stkg")
+      plot(2016:2100,NPP,type="l",xlab="year",ylab="NPP")
+      if(figToFile) dev.off()
+      outresults <- cbind(V,grossgrowth,Wharv,Vharv,NEE,NBE,Wtot,soilC,gvW,Cstock)
+      #save(outresults,file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/region",r_no,"_Nmod",Nmodule,"_Base_sim.rdata"))
+    }
+    if(ggFigs){
+      st <- 1
+      grossgrowths <- apply(out$region$multiOut[,,"grossGrowth",,1],1:2,sum)
+      par(mfrow=c(3,2))
+      for(st in 1:5){
+        if(st<5) ni <- which(out$region$siteInfo[,"siteType"]==st)
+        if(st==5) ni <- which(out$region$siteInfo[,"siteType"]>=st)
+        plot(2016:2100,grossgrowths[ni[1],],ylim=c(0,max(grossgrowths)),xlab="year",ylab="growssgrowth",
+             main=paste("sitetype",st))
+        for(ijs in 1:length(ni)) lines(2016:2100, grossgrowths[ni[ijs],])
+        lines(2016:2100, grossgrowths[ni[1],],col="red",lwd=4)
+      }
+    }
+    
+    rm("out"); gc()
+    
+    print(paste("Run NoHarv for region",r_no,", sample size",nSitesRun,"..."))
+    out <- runModel(1,sampleX = dataS, harvScen="NoHarv",harvInten="NoHarv",
+                    rcps="CurrClim", RCP=0, 
+                    #rcps=rcps, RCP=1,
+                    HcFactor = HcFactor,
+                    compHarvX = 2, outType = outType, 
+                    initilizeSoil = F,
+                    procDrPeat = T, HcModInit = HcModInit, scale_cc_area = 10,
+                    P0currclim = P0currclim, fT0 = fT0, alpharVersion = alpharVersion)
+    if(TRUE){
+      areas <- dataS$area
+      outresults <- data.frame()
+      aveW <- function(tmp, a=areas) colSums(apply(tmp,1:2,sum)*a)/sum(a)
+      V <- aveW(out$region$multiOut[,,"V",,1])
+      grossgrowth <-  aveW(out$region$multiOut[,,"grossGrowth",,1])
+      Wtot <- aveW(out$region$multiOut[,,c(24,25,31,32,33),,1])
+      Wharv <- aveW(out$region$multiOut[,,"WroundWood",,1]+
+                      out$region$multiEnergyWood[,,,2])
+      Vharv <- aveW(out$region$multiOut[,,"VroundWood",,1]+
+                      out$region$multiEnergyWood[,,,1])
+      NPP <- -aveW(out$region$multiOut[,,"npp",,1])
+      NEE <- -aveW(out$region$multiOut[,,"NEP/SMI[layer_1]",,1])*10
+      n1 <- which(dataS$minpeat==1)
+      soilC <- aveW(out$region$multiOut[n1,,"soilC",,1],a = areas[n1])
+      gvW <- colSums(out$region$GVout[,,4]*areas)/sum(areas)
+      Cstock <- Wtot + soilC + gvW
+      NBE <- (44/12*(NEE+Wharv)+
+                (298*out$region$N2OemisDrPeat_kgyear + 25*out$region$CH4emisDrPeat_kgyear)/sum(dataS$area))/1000
+      if(figToFile){
+        par(mfrow=c(2,1))
+        plot(2016:2100, V, type="l", xlab="year", ylab="V", main=paste("N module",Nmodule))
+        plot(2016:2100,Vharv,type="l",xlab="year",ylab="Vharv,m3ha-1")
+        points(2016:(2015+nrow(HarvLimMaak)),rowSums(HarvLimMaak)/sum(data.all$area)*1000,
+               col="red")
+        pdf(paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/region",r_no,"_Nmod",Nmodule,"_Hc",HcModInit,"_NoHarv_sim.pdf"))      
+      }
+      par(mfrow=c(3,2))
+      title <- paste("N module",Nmodule)
+      if(Nmodule==1) title <- paste("N module",Nmodule,"alpharVersion =", alpharVersion)
+      plot(2016:2100, V, type="l", xlab="year", ylab="V", main=title)
+      plot(2016:2100, grossgrowth, type="l",xlab="year", ylab="grossgrowth")
+      plot(2016:2100, Wharv, type="l", xlab="year", ylab="Wharv, kg C ha-1")
+      plot(2016:2100, NEE, type="l", xlab="year", ylab="NEE, kg C ha-1")
+      plot(2016:2100, Wtot, type="l", xlab="year", ylab="Wtot, kg C ha-1")
+      plot(2016:2100, soilC, type="l", xlab="year", ylab="soilC, kg C ha-1")
+      plot(2016:2100, gvW, type="l", xlab="year", ylab="gvW, kg C ha-1")
+      plot(2016:2100, Cstock, type="l", xlab="year", ylab="C stock, kg C ha-1")
+      plot(2016:2100, NBE, type="l", xlab="year", ylab="NBE, t CO2eq ha-1")
+      lines(c(2016,2100),c(0,0))
+      #print(sum(data.all$area)*NBE/1e6)
+      plot(2016:2100,Vharv,type="l",xlab="year",ylab="Vharv,m3ha-1")
+      points(2016:(2015+nrow(HarvLimMaak)),rowSums(HarvLimMaak)/sum(data.all$area)*1000,
+             col="red")
+      wf_stkg <- aveW(out$region$multiOut[,,"wf_STKG",,1])
+      plot(2016:2100,wf_stkg,type="l",xlab="year",ylab="wf_stkg")
+      plot(2016:2100,NPP,type="l",xlab="year",ylab="NPP")
+      if(figToFile) dev.off()
+      outresults <- cbind(V,grossgrowth,Wharv,Vharv,NEE,NBE,Wtot,soilC,gvW,Cstock)
+      #save(outresults,file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/region",r_no,"_Nmod",Nmodule,"_NoHarv_sim.rdata"))
+    }
+    if(ggFigs){
+      st <- 1
+      grossgrowths <- apply(out$region$multiOut[,,"grossGrowth",,1],1:2,sum)
+      par(mfrow=c(3,2))
+      for(st in 1:5){
+        if(st<5) ni <- which(out$region$siteInfo[,"siteType"]==st)
+        if(st==5) ni <- which(out$region$siteInfo[,"siteType"]>=st)
+        plot(2016:2100,grossgrowths[ni[1],],ylim=c(0,max(grossgrowths)),xlab="year",ylab="growssgrowth",
+             main=paste("sitetype",st))
+        for(ijs in 1:length(ni)) lines(2016:2100, grossgrowths[ni[ijs],])
+        lines(2016:2100, grossgrowths[ni[1],],col="red",lwd=4)
+      }
+    }
+  }  
+  tataatsa <- areatjye
+}
 #colMeans(apply(out$region$multiOut[which(dataS$landclass==2),1:10,"grossGrowth",,1],1:2,sum))
 #colMeans(apply(out$region$multiOut[which(dataS$landclass==1),1:10,"soilC",,1],1:2,sum))
 #colMeans(apply(out$region$multiOut[which(dataS$landclass==2),1:10,"soilC",,1],1:2,sum))
@@ -143,30 +351,37 @@ for(ferti in 1:fertmax){
   speciess[,,"kitu",ferti] <- as.matrix(kitu[,1:3])
   # pine dominated
   pinedom <- tmps[which(tmp$pine>0.5 & tmps$fert==ferti),]
+  if(dim(pinedom)[1]==0)    pinedom <- tmps[which(tmp$pine>0.5),]
   pinedom <- pinedom[sample(1:nrow(pinedom),size = nSitesRun0, replace = T),1:3]
   speciess[,,"pinedom",ferti] <- as.matrix(pinedom)
   # spruce dominated
   sprucedom <- tmps[which(tmp$spruce>0.5 & tmps$fert==ferti),]
+  if(dim(sprucedom)[1]==0)   sprucedom <- tmps[which(tmp$spruce>0.5),]
   sprucedom <- sprucedom[sample(1:nrow(sprucedom),size = nSitesRun0, replace = T),1:3]
   speciess[,,"sprucedom",ferti] <- as.matrix(sprucedom)
   # birch dominated
   birchdom <- tmps[which(tmp$birch>0.5 & tmps$fert==ferti),]
+  if(dim(birchdom)[1]==0)  birchdom <- tmps[which(tmp$birch>0.5),]
   birchdom <- birchdom[sample(1:nrow(birchdom),size = nSitesRun0, replace = T),1:3]
   speciess[,,"birchdom",ferti] <- as.matrix(birchdom)
   # pine & birch mix
   pinebirch <- tmps[which(tmp$pine<0.5 & tmp$birch<0.5 & tmp$spruce<0.2 & tmps$fert==ferti),]
+  if(dim(pinebirch)[1]==0)    pinebirch <- tmps[which(tmp$pine<0.5 & tmp$birch<0.5 & tmp$spruce<0.2),]
   pinebirch <- pinebirch[sample(1:nrow(pinebirch),size = nSitesRun0, replace = T),1:3]
   speciess[,,"pinebirch",ferti] <- as.matrix(pinebirch)
   # spruce & birch mix
   sprucebirch <- tmps[which(tmp$spruce<0.5 & tmp$birch<0.5 & tmp$pine<0.2 & tmps$fert==ferti),]
+  if(dim(sprucebirch)[1]==0)   sprucebirch <- tmps[which(tmp$spruce<0.5 & tmp$birch<0.5 & tmp$pine<0.2),]
   sprucebirch <- sprucebirch[sample(1:nrow(sprucebirch),size = nSitesRun0, replace = T),1:3]
   speciess[,,"sprucebirch",ferti] <- as.matrix(sprucebirch)
   # spruce & pine mix
   sprucepine <- tmps[which(tmp$spruce<0.5 & tmp$pine<0.5 & tmp$birch<0.2 & tmps$fert==ferti),]
+  if(dim(sprucepine)[1]==0) sprucepine <- tmps[which(tmp$spruce<0.5 & tmp$pine<0.5 & tmp$birch<0.2),]
   sprucepine <- sprucepine[sample(1:nrow(sprucepine),size = nSitesRun0, replace = T),1:3]
   speciess[,,"sprucepine",ferti] <- as.matrix(sprucepine)
   # all mix
   sprucepinebirch <- tmps[which(tmp$spruce<.5 & tmp$pine<.5 & tmp$birch<.5 & tmp$spruce>0.2 & tmp$pine>.2 & tmp$birch>0.2 & tmps$fert==ferti),]
+  if(dim(sprucepinebirch)[1]==0) sprucepine <-   sprucepinebirch <- tmps[which(tmp$spruce<.5 & tmp$pine<.5 & tmp$birch<.5 & tmp$spruce>0.2 & tmp$pine>.2 & tmp$birch>0.2),]
   sprucepinebirch <- sprucepinebirch[sample(1:nrow(sprucepinebirch),size = nSitesRun0, replace = T),1:3]
   speciess[,,"sprucepinebirch",ferti] <- as.matrix(sprucepinebirch)
 }
@@ -277,13 +492,13 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
         #source_url("https://raw.githubusercontent.com/virpi-j/Hiilikartta/master/functions.R")
         #source("~/Hiilikartta/functions.R", local = T)
         #if(manualRun){
-        #  RCP=climScen; climdata=NULL; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; outType = "hiiliKartta"; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=dataS; P0currclim=NA; fT0=NA; sampleID <- 1
+        #  RCP=RCP; climdata=NULL; easyInit=FALSE; forceSaveInitSoil=F; cons10run = F; procDrPeat=F; outType = "hiiliKartta"; coeffPeat1=-240; coeffPeat2=70; coefCH4 = 0.34; coefN20_1 = 0.23; coefN20_2 = 0.077; landClassUnman=NULL; compHarvX = 0; funPreb = regionPrebas; initSoilCreStart=NULL; outModReStart=NULL; reStartYear=1; sampleX=dataS; P0currclim=NA; fT0=NA; sampleID <- 1
         #}
         if(initAgei==1){
           out <- lapply(sampleIDs, function(jx) {
             runModel(jx,harvScen=harvScen, harvInten=harvInten, 
                      outType = "hiiliKartta", saveInitStage = T,
-                     RCP = climScen, initAge = initAge, ingrowth = F, sampleX = dataS)})
+                     RCP = RCP, initAge = initAge, ingrowth = F, sampleX = dataS)})
           
           #if(harvSceni=="NoHarv"){ # for all harvest scenarios, the init state at age x comes from noharv-scenario
           if(is.na(initAge)){
@@ -330,7 +545,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
               runModel(jx,sampleX = dataS, harvScen=harvScen, harvInten=harvInten, 
                        outType = "hiiliKartta", 
                        ingrowth = ingrowth, climdata = climdata,
-                       RCP = climScen, initAge = initAge)})
+                       RCP = RCP, initAge = initAge)})
           }
           #}
         } else {
@@ -339,7 +554,7 @@ runPerHarvScen <- function(harvSceni, speciesSeti, dataS=dataSorig){
             load(file=paste0("/scratch/project_2000994/PREBASruns/PREBAStesting/HiiliKartta_climdata",r_no,"_clim",climModids[jx],".rdata"))
             runModel(jx,sampleX = dataS, harvScen=harvScen, harvInten=harvInten, outType = "hiiliKartta", 
                      ingrowth = ingrowth,climdata = climdata, 
-                     RCP = climScen, initAge = initAge)})
+                     RCP = RCP, initAge = initAge)})
           #  tta <- aetgs
         }
         
